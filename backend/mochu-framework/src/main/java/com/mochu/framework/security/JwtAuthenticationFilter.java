@@ -74,14 +74,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 java.util.Map<String, Object> userInfoMap =
                         (java.util.Map<String, Object>) redisTemplate.opsForValue().get(userInfoKey);
                 if (userInfoMap != null) {
-                    if (userInfoMap.get("deptId") != null) {
-                        loginUser.setDeptId((Integer) userInfoMap.get("deptId"));
+                    if (userInfoMap.get("deptId") instanceof Number n) {
+                        loginUser.setDeptId(n.intValue());
                     }
-                    if (userInfoMap.get("dataScope") != null) {
-                        loginUser.setDataScope((Integer) userInfoMap.get("dataScope"));
+                    if (userInfoMap.get("dataScope") instanceof Number n) {
+                        loginUser.setDataScope(n.intValue());
                     }
                     if (userInfoMap.get("realName") != null) {
-                        loginUser.setRealName((String) userInfoMap.get("realName"));
+                        loginUser.setRealName(userInfoMap.get("realName").toString());
                     }
                 }
 

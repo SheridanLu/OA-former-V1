@@ -15,6 +15,12 @@ services:
       - mysql-data:/var/lib/mysql
       - ./docs/sql/V3.2_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pmochu@2026"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -24,6 +30,12 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "mochu@2026", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   minio:
     image: minio/minio:latest
@@ -46,11 +58,16 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - mysql
-      - redis
-      - minio
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: on-failure
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/mochu_oa?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: mochu@2026
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PASSWORD: mochu@2026
@@ -64,7 +81,9 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+    restart: on-failure
 
 volumes:
   mysql-data:
