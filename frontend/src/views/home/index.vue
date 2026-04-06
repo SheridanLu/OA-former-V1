@@ -44,7 +44,7 @@
           :key="item.id"
         >
           <span class="announcement-title">{{ item.title }}</span>
-          <span class="announcement-time">{{ item.publishTime }}</span>
+          <span class="announcement-time">{{ item.publish_time }}</span>
         </div>
       </div>
       <el-empty v-else description="暂无公告" :image-size="80" />
@@ -57,6 +57,8 @@ import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { getHomeData } from '@/api/auth'
 import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn'
+dayjs.locale('zh-cn')
 
 const userStore = useUserStore()
 

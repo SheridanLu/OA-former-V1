@@ -36,8 +36,9 @@ public interface SysRoleMapper extends BaseMapper<SysRole> {
      */
     @Select("SELECT DISTINCT p.perm_code FROM sys_permission p " +
             "INNER JOIN sys_role_permission rp ON rp.permission_id = p.id " +
+            "INNER JOIN sys_role r ON r.id = rp.role_id " +
             "INNER JOIN sys_user_role ur ON ur.role_id = rp.role_id " +
-            "WHERE ur.user_id = #{userId}")
+            "WHERE ur.user_id = #{userId} AND r.deleted = 0 AND r.status = 1")
     Set<String> selectPermCodesByUserId(@Param("userId") Integer userId);
 
     /**

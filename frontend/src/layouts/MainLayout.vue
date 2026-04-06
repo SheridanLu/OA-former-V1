@@ -56,14 +56,18 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
+const router = useRouter()
 const isCollapse = ref(false)
 
 const handleCommand = (command) => {
   if (command === 'logout') {
     userStore.logout()
+  } else if (command === 'profile') {
+    router.push('/profile')
   }
 }
 </script>

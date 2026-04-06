@@ -190,7 +190,7 @@ public class UserService {
                 SysUserRole ur = new SysUserRole();
                 ur.setUserId(userId);
                 ur.setRoleId(roleId);
-                sysUserRoleMapper.insert(ur);
+                sysUserRoleMapper.insertUserRole(ur);
             }
         }
     }

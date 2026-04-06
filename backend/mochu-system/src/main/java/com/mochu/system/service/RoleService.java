@@ -155,7 +155,7 @@ public class RoleService {
             SysRolePermission rp = new SysRolePermission();
             rp.setRoleId(roleId);
             rp.setPermissionId(permId);
-            sysRolePermissionMapper.insert(rp);
+            sysRolePermissionMapper.insertRolePermission(rp);
         }
     }
 

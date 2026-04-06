@@ -45,7 +45,7 @@ public class HomeService {
         Integer userId = SecurityUtils.getCurrentUserId();
         String todoKey = Constants.REDIS_TODO_COUNT_PREFIX + userId;
         Object todoCount = redisTemplate.opsForValue().get(todoKey);
-        return todoCount != null ? (Integer) todoCount : 0;
+        return todoCount instanceof Number n ? n.intValue() : 0;
     }
 
     /**

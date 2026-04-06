@@ -20,20 +20,15 @@ public class PermissionController {
     private final PermissionService permissionService;
 
     /**
-     * 全部权限列表 — GET /api/v1/admin/permissions
+     * 权限列表 — GET /api/v1/admin/permissions
+     * 可选参数 module 按模块过滤
      */
     @GetMapping
     @PreAuthorize("hasAuthority('system:role-manage')")
-    public R<List<PermissionVO>> list() {
+    public R<List<PermissionVO>> list(@RequestParam(required = false) String module) {
+        if (module != null && !module.isBlank()) {
+            return R.ok(permissionService.listByModule(module));
+        }
         return R.ok(permissionService.listAll());
-    }
-
-    /**
-     * 按模块查询 — GET /api/v1/admin/permissions?module=xxx
-     */
-    @GetMapping(params = "module")
-    @PreAuthorize("hasAuthority('system:role-manage')")
-    public R<List<PermissionVO>> listByModule(@RequestParam String module) {
-        return R.ok(permissionService.listByModule(module));
     }
 }

@@ -66,6 +66,9 @@ public class DeptController {
     @PreAuthorize("hasAuthority('system:dept-manage')")
     public R<Void> updateStatus(@PathVariable Integer id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
+        if (status == null) {
+            throw new com.mochu.common.exception.BusinessException("status参数不能为空");
+        }
         deptService.updateDeptStatus(id, status);
         return R.ok();
     }
