@@ -1,0 +1,247 @@
+<template>
+  <div class="contract-page">
+    <el-card shadow="never" class="search-card">
+      <el-form :model="queryForm" inline>
+        <el-form-item label="合同名称">
+          <el-input v-model="queryForm.contractName" placeholder="请输入" clearable style="width: 160px" />
+        </el-form-item>
+        <el-form-item label="合同类型">
+          <el-select v-model="queryForm.contractType" placeholder="全部" clearable style="width: 120px">
+            <el-option label="收入合同" value="income" />
+            <el-option label="支出合同" value="expense" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="queryForm.status" placeholder="全部" clearable style="width: 120px">
+            <el-option label="草稿" value="draft" />
+            <el-option label="待审批" value="pending" />
+            <el-option label="已审批" value="approved" />
+            <el-option label="已驳回" value="rejected" />
+            <el-option label="已终止" value="terminated" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" style="margin-top: 12px">
+      <div style="margin-bottom: 12px">
+        <el-button type="primary" @click="handleAdd">新建合同</el-button>
+      </div>
+
+      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+        <el-table-column prop="contract_no" label="合同编号" width="140" />
+        <el-table-column prop="contract_name" label="合同名称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="contract_type" label="类型" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.contract_type === 'income' ? 'success' : 'warning'" size="small">
+              {{ row.contract_type === 'income' ? '收入' : '支出' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="amount_with_tax" label="含税金额" width="130" align="right">
+          <template #default="{ row }">{{ row.amount_with_tax ? Number(row.amount_with_tax).toLocaleString() : '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="party_a" label="甲方" width="130" show-overflow-tooltip />
+        <el-table-column prop="party_b" label="乙方" width="130" show-overflow-tooltip />
+        <el-table-column prop="sign_date" label="签订日期" width="110" />
+        <el-table-column prop="status" label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="statusMap[row.status]?.type || 'info'" size="small">
+              {{ statusMap[row.status]?.text || row.status }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination v-if="total > 0" style="margin-top: 16px; justify-content: flex-end" background
+        layout="total, sizes, prev, pager, next, jumper" :total="total" :page-sizes="[10, 20, 50]"
+        v-model:current-page="queryForm.page" v-model:page-size="queryForm.size"
+        @size-change="fetchData" @current-change="fetchData" />
+    </el-card>
+
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑合同' : '新建合同'" width="750px" @closed="resetForm">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="合同名称" prop="contractName">
+          <el-input v-model="form.contractName" />
+        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="合同类型" prop="contractType">
+              <el-select v-model="form.contractType" style="width: 100%">
+                <el-option label="收入合同" value="income" />
+                <el-option label="支出合同" value="expense" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="关联项目" prop="projectId">
+              <el-select v-model="form.projectId" filterable placeholder="选择项目" style="width: 100%">
+                <el-option v-for="p in projects" :key="p.id" :label="p.project_name || p.projectName" :value="p.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-form-item label="含税金额" prop="amountWithTax">
+              <el-input-number v-model="form.amountWithTax" :precision="2" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="不含税金额" prop="amountWithoutTax">
+              <el-input-number v-model="form.amountWithoutTax" :precision="2" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="税率(%)" prop="taxRate">
+              <el-input-number v-model="form.taxRate" :precision="2" :min="0" :max="100" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-form-item label="签订日期">
+              <el-date-picker v-model="form.signDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="开始日期">
+              <el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="结束日期">
+              <el-date-picker v-model="form.endDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="甲方"><el-input v-model="form.partyA" /></el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="乙方"><el-input v-model="form.partyB" /></el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getContractList, createContract, updateContract, deleteContract } from '@/api/contract'
+import { getAllProjects } from '@/api/project'
+
+const loading = ref(false)
+const submitting = ref(false)
+const tableData = ref([])
+const total = ref(0)
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const formRef = ref(null)
+const editId = ref(null)
+const projects = ref([])
+
+const statusMap = {
+  draft: { text: '草稿', type: 'info' },
+  pending: { text: '待审批', type: 'warning' },
+  approved: { text: '已审批', type: 'success' },
+  rejected: { text: '已驳回', type: 'danger' },
+  terminated: { text: '已终止', type: 'info' }
+}
+
+const queryForm = reactive({ contractName: '', contractType: '', status: '', page: 1, size: 20 })
+
+const form = reactive({
+  contractName: '', contractType: 'expense', projectId: null, supplierId: null,
+  amountWithTax: null, amountWithoutTax: null, taxRate: null,
+  signDate: '', startDate: '', endDate: '', partyA: '', partyB: '', remark: ''
+})
+
+const rules = {
+  contractName: [{ required: true, message: '请输入合同名称', trigger: 'blur' }],
+  contractType: [{ required: true, message: '请选择合同类型', trigger: 'change' }],
+  projectId: [{ required: true, message: '请选择关联项目', trigger: 'change' }],
+  amountWithTax: [{ required: true, message: '请输入含税金额', trigger: 'blur' }],
+  amountWithoutTax: [{ required: true, message: '请输入不含税金额', trigger: 'blur' }],
+  taxRate: [{ required: true, message: '请输入税率', trigger: 'blur' }]
+}
+
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const res = await getContractList(queryForm)
+    tableData.value = res.data.records || []
+    total.value = res.data.total || 0
+  } finally { loading.value = false }
+}
+
+const loadProjects = async () => {
+  try {
+    const res = await getAllProjects()
+    projects.value = res.data || []
+  } catch { /* ignore */ }
+}
+
+const handleSearch = () => { queryForm.page = 1; fetchData() }
+const handleReset = () => { queryForm.contractName = ''; queryForm.contractType = ''; queryForm.status = ''; queryForm.page = 1; fetchData() }
+const handleAdd = () => { isEdit.value = false; editId.value = null; loadProjects(); dialogVisible.value = true }
+
+const handleEdit = (row) => {
+  isEdit.value = true; editId.value = row.id; loadProjects()
+  Object.assign(form, {
+    contractName: row.contract_name, contractType: row.contract_type,
+    projectId: row.project_id, supplierId: row.supplier_id,
+    amountWithTax: row.amount_with_tax, amountWithoutTax: row.amount_without_tax,
+    taxRate: row.tax_rate, signDate: row.sign_date || '', startDate: row.start_date || '',
+    endDate: row.end_date || '', partyA: row.party_a || '', partyB: row.party_b || '',
+    remark: row.remark || ''
+  })
+  dialogVisible.value = true
+}
+
+const resetForm = () => {
+  Object.assign(form, {
+    contractName: '', contractType: 'expense', projectId: null, supplierId: null,
+    amountWithTax: null, amountWithoutTax: null, taxRate: null,
+    signDate: '', startDate: '', endDate: '', partyA: '', partyB: '', remark: ''
+  })
+  formRef.value?.resetFields()
+}
+
+const handleSubmit = async () => {
+  await formRef.value.validate()
+  submitting.value = true
+  try {
+    if (isEdit.value) { await updateContract(editId.value, form); ElMessage.success('更新成功') }
+    else { await createContract(form); ElMessage.success('创建成功') }
+    dialogVisible.value = false; fetchData()
+  } finally { submitting.value = false }
+}
+
+const handleDelete = async (row) => {
+  await ElMessageBox.confirm(`确定删除合同"${row.contract_name}"？`, '提示', { type: 'warning' })
+  await deleteContract(row.id); ElMessage.success('删除成功'); fetchData()
+}
+
+onMounted(() => { fetchData() })
+</script>
+
+<style scoped>.search-card { margin-bottom: 0; }</style>

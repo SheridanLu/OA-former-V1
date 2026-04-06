@@ -23,6 +23,47 @@
           <template #title>待办中心</template>
         </el-menu-item>
 
+        <el-menu-item index="/projects">
+          <el-icon><Folder /></el-icon>
+          <template #title>项目管理</template>
+        </el-menu-item>
+        <el-menu-item index="/suppliers">
+          <el-icon><Van /></el-icon>
+          <template #title>供应商管理</template>
+        </el-menu-item>
+        <el-menu-item index="/materials">
+          <el-icon><Box /></el-icon>
+          <template #title>材料管理</template>
+        </el-menu-item>
+        <el-menu-item index="/contracts">
+          <el-icon><Tickets /></el-icon>
+          <template #title>合同管理</template>
+        </el-menu-item>
+        <el-menu-item index="/purchases">
+          <el-icon><ShoppingCart /></el-icon>
+          <template #title>采购管理</template>
+        </el-menu-item>
+        <el-menu-item index="/inventory">
+          <el-icon><House /></el-icon>
+          <template #title>库存管理</template>
+        </el-menu-item>
+        <el-menu-item index="/progress">
+          <el-icon><DataLine /></el-icon>
+          <template #title>进度变更</template>
+        </el-menu-item>
+        <el-menu-item index="/finance">
+          <el-icon><Money /></el-icon>
+          <template #title>财务管理</template>
+        </el-menu-item>
+        <el-menu-item index="/hr">
+          <el-icon><Avatar /></el-icon>
+          <template #title>人力资源</template>
+        </el-menu-item>
+        <el-menu-item index="/completion">
+          <el-icon><Finished /></el-icon>
+          <template #title>竣工劳务</template>
+        </el-menu-item>
+
         <el-sub-menu index="system">
           <template #title>
             <el-icon><Setting /></el-icon>
@@ -43,6 +84,18 @@
           <el-menu-item index="/system/announcements">
             <el-icon><Bell /></el-icon>
             <template #title>公告管理</template>
+          </el-menu-item>
+          <el-menu-item index="/system/audit-logs">
+            <el-icon><Document /></el-icon>
+            <template #title>审计日志</template>
+          </el-menu-item>
+          <el-menu-item index="/system/configs">
+            <el-icon><Tools /></el-icon>
+            <template #title>系统配置</template>
+          </el-menu-item>
+          <el-menu-item index="/system/delegations">
+            <el-icon><Switch /></el-icon>
+            <template #title>委托代理</template>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>
@@ -85,7 +138,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, List, Fold, Expand } from '@element-plus/icons-vue'
+import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, List, Fold, Expand, Document, Tools, Switch, Folder, Van, Box, Tickets, ShoppingCart, House, DataLine, Money, Avatar, Finished } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
