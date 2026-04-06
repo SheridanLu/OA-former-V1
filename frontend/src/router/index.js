@@ -18,6 +18,30 @@ const routes = [
         name: 'Home',
         component: () => import('@/views/home/index.vue'),
         meta: { title: '首页' }
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人信息' }
+      },
+      {
+        path: 'system/users',
+        name: 'UserManage',
+        component: () => import('@/views/system/user/index.vue'),
+        meta: { title: '用户管理' }
+      },
+      {
+        path: 'system/roles',
+        name: 'RoleManage',
+        component: () => import('@/views/system/role/index.vue'),
+        meta: { title: '角色管理' }
+      },
+      {
+        path: 'system/depts',
+        name: 'DeptManage',
+        component: () => import('@/views/system/dept/index.vue'),
+        meta: { title: '部门管理' }
       }
     ]
   },

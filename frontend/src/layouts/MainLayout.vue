@@ -18,6 +18,25 @@
           <el-icon><HomeFilled /></el-icon>
           <template #title>首页</template>
         </el-menu-item>
+
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/system/users">
+            <el-icon><User /></el-icon>
+            <template #title>用户管理</template>
+          </el-menu-item>
+          <el-menu-item index="/system/roles">
+            <el-icon><Key /></el-icon>
+            <template #title>角色管理</template>
+          </el-menu-item>
+          <el-menu-item index="/system/depts">
+            <el-icon><OfficeBuilding /></el-icon>
+            <template #title>部门管理</template>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -58,6 +77,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { HomeFilled, Setting, User, Key, OfficeBuilding, Fold, Expand } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
