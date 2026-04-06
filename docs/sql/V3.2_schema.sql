@@ -1277,7 +1277,7 @@ CREATE TABLE biz_no_seed (
 
 -- 超级管理员
 INSERT INTO sys_user (id, username, password_hash, real_name, phone, dept_id, status, creator_id) VALUES
-(1, 'admin', '$2a$10$EuWPXPwJmYGVPKQaQE2tHe1S5TjhyFZ.w0LkBU6K/G5XJ3nAsCFHe', '系统管理员', '13800000000', 1, 1, 1);
+(1, 'admin', '$2a$10$WFhI3yqqRL4ngA9ZSYnOP.USIo355xFs1rxRPszVAiif9x8WbeQ.6', '系统管理员', '13800000000', 1, 1, 1);
 
 -- 默认部门
 INSERT INTO sys_dept (id, name, parent_id, level, path, sort, status, creator_id) VALUES
