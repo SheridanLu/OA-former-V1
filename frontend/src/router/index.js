@@ -42,6 +42,12 @@ const routes = [
         name: 'DeptManage',
         component: () => import('@/views/system/dept/index.vue'),
         meta: { title: '部门管理' }
+      },
+      {
+        path: 'system/announcements',
+        name: 'AnnouncementManage',
+        component: () => import('@/views/system/announcement/index.vue'),
+        meta: { title: '公告管理' }
       }
     ]
   },

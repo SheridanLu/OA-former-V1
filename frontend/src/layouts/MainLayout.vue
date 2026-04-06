@@ -36,6 +36,10 @@
             <el-icon><OfficeBuilding /></el-icon>
             <template #title>部门管理</template>
           </el-menu-item>
+          <el-menu-item index="/system/announcements">
+            <el-icon><Bell /></el-icon>
+            <template #title>公告管理</template>
+          </el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -77,7 +81,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { HomeFilled, Setting, User, Key, OfficeBuilding, Fold, Expand } from '@element-plus/icons-vue'
+import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, Fold, Expand } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()

@@ -154,7 +154,7 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await getUserList(queryForm)
-    tableData.value = res.data.list
+    tableData.value = res.data.records
     total.value = res.data.total
   } finally {
     loading.value = false
@@ -249,7 +249,7 @@ const loadDepts = async () => {
 const loadRoles = async () => {
   try {
     const res = await getRoleList({ page: 1, size: 100 })
-    roleList.value = res.data.list
+    roleList.value = res.data.records
   } catch (e) {}
 }
 

@@ -127,7 +127,7 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await getRoleList(queryForm)
-    tableData.value = res.data.list
+    tableData.value = res.data.records
     total.value = res.data.total
   } finally {
     loading.value = false
