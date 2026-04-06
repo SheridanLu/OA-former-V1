@@ -20,6 +20,12 @@ const routes = [
         meta: { title: '首页' }
       },
       {
+        path: 'todos',
+        name: 'TodoCenter',
+        component: () => import('@/views/todo/index.vue'),
+        meta: { title: '待办中心' }
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/profile/index.vue'),

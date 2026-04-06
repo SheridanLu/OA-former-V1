@@ -18,6 +18,10 @@
           <el-icon><HomeFilled /></el-icon>
           <template #title>首页</template>
         </el-menu-item>
+        <el-menu-item index="/todos">
+          <el-icon><List /></el-icon>
+          <template #title>待办中心</template>
+        </el-menu-item>
 
         <el-sub-menu index="system">
           <template #title>
@@ -81,7 +85,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, Fold, Expand } from '@element-plus/icons-vue'
+import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, List, Fold, Expand } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
