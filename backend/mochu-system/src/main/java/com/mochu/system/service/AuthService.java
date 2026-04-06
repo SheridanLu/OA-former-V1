@@ -93,6 +93,7 @@ public class AuthService {
 
         // 校验密码
         if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
+            log.warn("登录失败: 用户={}, 密码不匹配, passwordHash={}", dto.getUsername(), user.getPasswordHash().substring(0, 10) + "...");
             handleLoginFail(user);
             throw new BusinessException(401, "密码错误");
         }
