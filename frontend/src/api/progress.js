@@ -16,6 +16,10 @@ export function deleteGanttTask(id) {
   return request.delete(`/api/v1/progress/gantt/${id}`)
 }
 
+export function getChangeOrderDetails(id) {
+  return request.get(`/api/v1/progress/changes/${id}/details`)
+}
+
 export function getChangeOrderList(params) {
   return request.get('/api/v1/progress/changes', { params })
 }

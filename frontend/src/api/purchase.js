@@ -16,6 +16,10 @@ export function updatePurchaseStatus(id, status) {
   return request.patch(`/api/v1/purchases/${id}/status`, { status })
 }
 
+export function getPurchaseItems(id) {
+  return request.get(`/api/v1/purchases/${id}/items`)
+}
+
 export function deletePurchase(id) {
   return request.delete(`/api/v1/purchases/${id}`)
 }

@@ -389,12 +389,12 @@ const resignDlg = ref(false)
 const salaryForm = reactive({
   userId: null, salaryMonth: '', baseSalary: null, positionSalary: null,
   performance: null, allowance: null, bonus: null, deduction: null,
-  socialInsurance: null, tax: null, netSalary: null
+  socialInsurance: null, tax: null, netSalary: null, status: null
 })
-const contractForm = reactive({ userId: null, contractType: '', startDate: '', endDate: '' })
-const certForm = reactive({ certType: '', userId: null, certName: '', certCategory: '', certNo: '', issueDate: '', expireDate: '' })
-const entryForm = reactive({ applicantName: '', phone: '', deptId: null, position: '', entryDate: '', education: '', workYears: null, idCardNo: '' })
-const resignForm = reactive({ userId: null, resignType: '', resignDate: '', resignReason: '', handoverTo: null })
+const contractForm = reactive({ userId: null, contractType: '', startDate: '', endDate: '', status: null })
+const certForm = reactive({ certType: '', userId: null, certName: '', certCategory: '', certNo: '', issueDate: '', expireDate: '', status: null, warnStatus: null })
+const entryForm = reactive({ applicantName: '', phone: '', deptId: null, position: '', entryDate: '', education: '', workYears: null, idCardNo: '', status: null })
+const resignForm = reactive({ userId: null, resignType: '', resignDate: '', resignReason: '', handoverTo: null, status: null, handoverStatus: null })
 
 // ====== Rules ======
 const salaryRules = {
@@ -449,40 +449,43 @@ const openEditDialog = (type, row) => {
       userId: row.user_id, salaryMonth: row.salary_month || '', baseSalary: row.base_salary,
       positionSalary: row.position_salary, performance: row.performance, allowance: row.allowance,
       bonus: row.bonus, deduction: row.deduction, socialInsurance: row.social_insurance,
-      tax: row.tax, netSalary: row.net_salary
+      tax: row.tax, netSalary: row.net_salary, status: row.status
     })
   } else if (type === 'hrContract') {
     Object.assign(contractForm, {
       userId: row.user_id, contractType: row.contract_type || '',
-      startDate: row.start_date || '', endDate: row.end_date || ''
+      startDate: row.start_date || '', endDate: row.end_date || '', status: row.status
     })
   } else if (type === 'certificate') {
     Object.assign(certForm, {
       certType: row.cert_type || '', userId: row.user_id, certName: row.cert_name || '',
       certCategory: row.cert_category || '', certNo: row.cert_no || '',
-      issueDate: row.issue_date || '', expireDate: row.expire_date || ''
+      issueDate: row.issue_date || '', expireDate: row.expire_date || '',
+      status: row.status, warnStatus: row.warn_status
     })
   } else if (type === 'entry') {
     Object.assign(entryForm, {
       applicantName: row.applicant_name || '', phone: row.phone || '', deptId: row.dept_id,
       position: row.position || '', entryDate: row.entry_date || '',
-      education: row.education || '', workYears: row.work_years, idCardNo: row.id_card_no || ''
+      education: row.education || '', workYears: row.work_years, idCardNo: row.id_card_no || '',
+      status: row.status
     })
   } else {
     Object.assign(resignForm, {
       userId: row.user_id, resignType: row.resign_type || '',
-      resignDate: row.resign_date || '', resignReason: row.resign_reason || '', handoverTo: row.handover_to
+      resignDate: row.resign_date || '', resignReason: row.resign_reason || '', handoverTo: row.handover_to,
+      status: row.status, handoverStatus: row.handover_status
     })
   }
   dlgMap[type].value = true
 }
 
 const resetDefaults = {
-  salary: { userId: null, salaryMonth: '', baseSalary: null, positionSalary: null, performance: null, allowance: null, bonus: null, deduction: null, socialInsurance: null, tax: null, netSalary: null },
-  hrContract: { userId: null, contractType: '', startDate: '', endDate: '' },
-  certificate: { certType: '', userId: null, certName: '', certCategory: '', certNo: '', issueDate: '', expireDate: '' },
-  entry: { applicantName: '', phone: '', deptId: null, position: '', entryDate: '', education: '', workYears: null, idCardNo: '' },
-  resign: { userId: null, resignType: '', resignDate: '', resignReason: '', handoverTo: null }
+  salary: { userId: null, salaryMonth: '', baseSalary: null, positionSalary: null, performance: null, allowance: null, bonus: null, deduction: null, socialInsurance: null, tax: null, netSalary: null, status: null },
+  hrContract: { userId: null, contractType: '', startDate: '', endDate: '', status: null },
+  certificate: { certType: '', userId: null, certName: '', certCategory: '', certNo: '', issueDate: '', expireDate: '', status: null, warnStatus: null },
+  entry: { applicantName: '', phone: '', deptId: null, position: '', entryDate: '', education: '', workYears: null, idCardNo: '', status: null },
+  resign: { userId: null, resignType: '', resignDate: '', resignReason: '', handoverTo: null, status: null, handoverStatus: null }
 }
 
 const resetCurrentForm = () => {

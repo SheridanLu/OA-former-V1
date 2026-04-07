@@ -209,7 +209,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getPurchaseList, createPurchase, updatePurchase, deletePurchase,
+  getPurchaseList, createPurchase, updatePurchase, deletePurchase, getPurchaseItems,
   getSpotPurchaseList, createSpotPurchase, updateSpotPurchase, deleteSpotPurchase
 } from '@/api/purchase'
 import { getAllProjects } from '@/api/project'
@@ -298,11 +298,22 @@ const handleAddPurchase = () => {
   purchaseDialogVisible.value = true
 }
 
-const handleEditPurchase = (row) => {
+const handleEditPurchase = async (row) => {
   isEditPurchase.value = true; editPurchaseId.value = row.id; loadProjects()
+  let existingItems = [createEmptyItem()]
+  try {
+    const res = await getPurchaseItems(row.id)
+    const items = res.data || []
+    if (items.length > 0) {
+      existingItems = items.map(i => ({
+        materialName: i.material_name || '', specModel: i.spec_model || '', unit: i.unit || '',
+        quantity: i.quantity, estimatedPrice: i.estimated_price, remark: i.remark || ''
+      }))
+    }
+  } catch { /* ignore */ }
   Object.assign(purchaseForm, {
     projectId: row.project_id, remark: row.remark || '',
-    items: [createEmptyItem()]
+    items: existingItems
   })
   purchaseDialogVisible.value = true
 }

@@ -202,7 +202,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getGanttTaskList, createGanttTask, updateGanttTask, deleteGanttTask,
-  getChangeOrderList, createChangeOrder, updateChangeOrder, deleteChangeOrder
+  getChangeOrderList, createChangeOrder, updateChangeOrder, deleteChangeOrder,
+  getChangeOrderDetails
 } from '@/api/progress'
 import { getAllProjects } from '@/api/project'
 
@@ -301,11 +302,22 @@ const handleDeleteGantt = async (row) => {
 // ====== 变更单 CRUD ======
 const handleAddChange = () => { isEdit.value = false; editId.value = null; loadProjects(); changeDialogVisible.value = true }
 
-const handleEditChange = (row) => {
+const handleEditChange = async (row) => {
   isEdit.value = true; editId.value = row.id; loadProjects()
+  let existingDetails = [createEmptyDetail()]
+  try {
+    const res = await getChangeOrderDetails(row.id)
+    const details = res.data || []
+    if (details.length > 0) {
+      existingDetails = details.map(d => ({
+        itemName: d.item_name || '', specModel: d.spec_model || '', unit: d.unit || '',
+        planQuantity: d.plan_quantity, actualQuantity: d.actual_quantity, unitPrice: d.unit_price
+      }))
+    }
+  } catch { /* ignore */ }
   Object.assign(changeForm, {
     projectId: row.project_id, changeType: row.change_type || '', title: row.title || '',
-    description: row.description || '', details: [createEmptyDetail()]
+    description: row.description || '', details: existingDetails
   })
   changeDialogVisible.value = true
 }
