@@ -36,7 +36,8 @@
           <el-tree-select
             v-model="form.parent_id"
             :data="treeData"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
+            node-key="id"
+            :props="{ label: 'name', children: 'children' }"
             placeholder="顶级部门"
             check-strictly
             clearable

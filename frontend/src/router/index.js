@@ -132,6 +132,12 @@ const routes = [
         name: 'CompletionManage',
         component: () => import('@/views/completion/index.vue'),
         meta: { title: '竣工劳务' }
+      },
+      {
+        path: 'approval',
+        name: 'ApprovalManage',
+        component: () => import('@/views/approval/index.vue'),
+        meta: { title: '流程审批' }
       }
     ]
   },

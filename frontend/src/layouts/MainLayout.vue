@@ -63,6 +63,10 @@
           <el-icon><Finished /></el-icon>
           <template #title>竣工劳务</template>
         </el-menu-item>
+        <el-menu-item index="/approval">
+          <el-icon><Stamp /></el-icon>
+          <template #title>流程审批</template>
+        </el-menu-item>
 
         <el-sub-menu index="system">
           <template #title>
@@ -138,7 +142,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, List, Fold, Expand, Document, Tools, Switch, Folder, Van, Box, Tickets, ShoppingCart, House, DataLine, Money, Avatar, Finished } from '@element-plus/icons-vue'
+import { HomeFilled, Setting, User, Key, OfficeBuilding, Bell, List, Fold, Expand, Document, Tools, Switch, Folder, Van, Box, Tickets, ShoppingCart, House, DataLine, Money, Avatar, Finished, Stamp } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()

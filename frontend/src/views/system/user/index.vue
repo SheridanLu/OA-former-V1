@@ -87,14 +87,18 @@
           <el-tree-select
             v-model="form.dept_id"
             :data="deptTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
+            node-key="id"
+            :props="{ label: 'name', children: 'children' }"
             placeholder="请选择部门"
             check-strictly
             clearable
+            style="width: 100%"
           />
         </el-form-item>
         <el-form-item label="职位">
-          <el-input v-model="form.position" />
+          <el-select v-model="form.position" filterable clearable placeholder="请选择职位" style="width: 100%">
+            <el-option v-for="p in positionOptions" :key="p" :label="p" :value="p" />
+          </el-select>
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="!form.id">
           <el-input v-model="form.password" type="password" show-password />
@@ -109,7 +113,7 @@
     <!-- 分配角色对话框 -->
     <el-dialog v-model="roleDialogVisible" title="分配角色" width="400px">
       <el-checkbox-group v-model="selectedRoleIds">
-        <el-checkbox v-for="r in roleList" :key="r.id" :label="r.id">{{ r.role_name }}</el-checkbox>
+        <el-checkbox v-for="r in roleList" :key="r.id" :value="r.id" :label="r.role_name" />
       </el-checkbox-group>
       <template #footer>
         <el-button @click="roleDialogVisible = false">取消</el-button>
@@ -138,6 +142,16 @@ const currentUserId = ref(null)
 const deptTree = ref([])
 const roleList = ref([])
 const formRef = ref(null)
+
+const positionOptions = [
+  '总经理', '副总经理', '总工程师',
+  '项目经理', '项目副经理', '技术负责人',
+  '施工员', '安全员', '质量员', '测量员',
+  '预算员', '材料员', '资料员', '采购员',
+  '财务主管', '会计', '出纳',
+  '法务人员', '人事专员', '行政专员',
+  '劳务队长', '班组长'
+]
 
 const queryForm = reactive({ username: '', real_name: '', phone: '', status: null, page: 1, size: 20 })
 
