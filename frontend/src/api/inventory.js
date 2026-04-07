@@ -40,6 +40,10 @@ export function createReturn(data) {
   return request.post('/api/v1/inventory/return', data)
 }
 
+export function updateReturn(id, data) {
+  return request.put(`/api/v1/inventory/return/${id}`, data)
+}
+
 export function deleteReturn(id) {
   return request.delete(`/api/v1/inventory/return/${id}`)
 }

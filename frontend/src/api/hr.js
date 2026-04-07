@@ -56,6 +56,10 @@ export function createEntry(data) {
   return request.post('/api/v1/hr/entries', data)
 }
 
+export function updateEntry(id, data) {
+  return request.put(`/api/v1/hr/entries/${id}`, data)
+}
+
 export function deleteEntry(id) {
   return request.delete(`/api/v1/hr/entries/${id}`)
 }
@@ -66,6 +70,10 @@ export function getResignList(params) {
 
 export function createResign(data) {
   return request.post('/api/v1/hr/resigns', data)
+}
+
+export function updateResign(id, data) {
+  return request.put(`/api/v1/hr/resigns/${id}`, data)
 }
 
 export function deleteResign(id) {

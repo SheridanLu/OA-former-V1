@@ -17,10 +17,9 @@ export function loginByPassword(data) {
 }
 
 export function loginBySms(data) {
-  // V3.2: snake_case convention - backend expects sms_code
   return request.post('/api/v1/auth/login-by-sms', {
     phone: data.phone,
-    sms_code: data.smsCode
+    smsCode: data.smsCode
   })
 }
 
@@ -35,8 +34,8 @@ export function forgotPassword(phone) {
 export function resetPassword(data) {
   return request.post('/api/v1/auth/reset-password', {
     phone: data.phone,
-    sms_code: data.smsCode,
-    new_password: data.newPassword
+    smsCode: data.smsCode,
+    newPassword: data.newPassword
   })
 }
 
