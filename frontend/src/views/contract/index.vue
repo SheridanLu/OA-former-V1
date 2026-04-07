@@ -323,14 +323,24 @@ const handleSubmit = async () => {
     }
   }
 
+  // 将 fieldValues 中的值统一转为字符串（el-input-number 产出的是数字）
+  const payload = { ...form }
+  if (form.fieldValues && Object.keys(form.fieldValues).length > 0) {
+    const strValues = {}
+    for (const [key, val] of Object.entries(form.fieldValues)) {
+      strValues[key] = val !== null && val !== undefined ? String(val) : ''
+    }
+    payload.fieldValues = strValues
+  }
+
   submitting.value = true
   try {
     if (isEdit.value) {
-      await updateContract(editId.value, form)
+      await updateContract(editId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      await createContract(form)
-      ElMessage.success('已提交审批')
+      await createContract(payload)
+      ElMessage.success('已提交')
     }
     dialogVisible.value = false; fetchData()
   } finally { submitting.value = false }

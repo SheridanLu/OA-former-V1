@@ -14,6 +14,7 @@ import com.mochu.common.constant.Constants;
 import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ContractService {
@@ -92,7 +94,7 @@ public class ContractService {
     }
 
     /**
-     * 创建合同 — 强制模板驱动 + 字段校验 + 提交审批
+     * 创建合同 — 模板驱动 + 字段校验 + 提交审批（均可选降级）
      */
     @Transactional
     public void create(ContractDTO dto, Integer initiatorId) {
@@ -101,31 +103,43 @@ public class ContractService {
             throw new BusinessException("无效的合同类型，必须为七类标准类型之一");
         }
 
-        // 2. 查找该类型当前启用模板版本
-        SysContractTplVersion activeVersion = tplService.getActiveVersion(dto.getContractType());
-        if (activeVersion == null) {
-            throw new BusinessException("该合同类型尚未配置模板，请联系管理员");
+        // 2. 查找该类型当前启用模板版本（可选）
+        SysContractTplVersion activeVersion = null;
+        List<SysContractTplField> fieldDefs = List.of();
+        try {
+            activeVersion = tplService.getActiveVersion(dto.getContractType());
+            if (activeVersion != null) {
+                fieldDefs = tplService.listFields(activeVersion.getId());
+                validateFieldValues(dto.getFieldValues(), fieldDefs);
+            }
+        } catch (BusinessException e) {
+            throw e; // 校验失败直接抛出
+        } catch (Exception e) {
+            log.warn("模板加载失败，跳过模板绑定: {}", e.getMessage());
         }
 
-        // 3. 加载字段定义并校验
-        List<SysContractTplField> fieldDefs = tplService.listFields(activeVersion.getId());
-        validateFieldValues(dto.getFieldValues(), fieldDefs);
-
-        // 4. 创建合同主记录
+        // 3. 创建合同主记录
         BizContract entity = new BizContract();
         BeanUtils.copyProperties(dto, entity, "fieldValues");
         entity.setContractNo(noGeneratorService.generate("CT"));
-        entity.setStatus("pending");
-        entity.setTemplateId(activeVersion.getTplId());
-        entity.setTplVersionId(activeVersion.getId());
+        entity.setCreatorId(initiatorId);
+        if (activeVersion != null) {
+            entity.setTemplateId(activeVersion.getTplId());
+            entity.setTplVersionId(activeVersion.getId());
+        }
         if (dto.getTaxAmount() == null && dto.getAmountWithTax() != null && dto.getAmountWithoutTax() != null) {
             entity.setTaxAmount(dto.getAmountWithTax().subtract(dto.getAmountWithoutTax()));
         }
+
+        // 4. 检查审批流程并设置状态
+        boolean hasFlow = approvalService.hasFlowDef("contract");
+        entity.setStatus(hasFlow ? "pending" : "draft");
         contractMapper.insert(entity);
 
         // 5. 批量写入字段值
-        if (dto.getFieldValues() != null) {
+        if (dto.getFieldValues() != null && activeVersion != null) {
             for (Map.Entry<String, String> entry : dto.getFieldValues().entrySet()) {
+                if (entry.getValue() == null) continue;
                 BizContractFieldValue fv = new BizContractFieldValue();
                 fv.setContractId(entity.getId());
                 fv.setFieldKey(entry.getKey());
@@ -136,9 +150,17 @@ public class ContractService {
         }
 
         // 6. 提交审批
-        Map<String, Object> bizContext = new HashMap<>();
-        bizContext.put("contract_type", dto.getContractType());
-        approvalService.submitForApproval("contract", entity.getId(), initiatorId, bizContext);
+        if (hasFlow) {
+            try {
+                Map<String, Object> bizContext = new HashMap<>();
+                bizContext.put("contract_type", dto.getContractType());
+                approvalService.submitForApproval("contract", entity.getId(), initiatorId, bizContext);
+            } catch (Exception e) {
+                log.warn("合同审批提交失败，保存为草稿: {}", e.getMessage());
+                entity.setStatus("draft");
+                contractMapper.updateById(entity);
+            }
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ import com.mochu.common.constant.Constants;
 import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.List;
 /**
  * 项目管理服务
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
@@ -65,9 +67,22 @@ public class ProjectService {
         BizProject entity = new BizProject();
         BeanUtils.copyProperties(dto, entity);
         entity.setProjectNo(noGeneratorService.generate("PJ"));
-        entity.setStatus("pending");
+        entity.setCreatorId(initiatorId);
+
+        // 检查是否已配置审批流程
+        boolean hasFlow = approvalService.hasFlowDef("project");
+        entity.setStatus(hasFlow ? "pending" : "draft");
         projectMapper.insert(entity);
-        approvalService.submitForApproval("project", entity.getId(), initiatorId);
+
+        if (hasFlow) {
+            try {
+                approvalService.submitForApproval("project", entity.getId(), initiatorId);
+            } catch (Exception e) {
+                log.warn("项目审批提交失败，保存为草稿: {}", e.getMessage());
+                entity.setStatus("draft");
+                projectMapper.updateById(entity);
+            }
+        }
     }
 
     public void update(Integer id, ProjectDTO dto) {

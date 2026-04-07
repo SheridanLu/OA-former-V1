@@ -100,6 +100,17 @@ public class ApprovalService {
     // ===================== 审批操作 =====================
 
     /**
+     * 检查指定业务类型是否已配置审批流程
+     */
+    public boolean hasFlowDef(String bizType) {
+        Long count = flowDefMapper.selectCount(
+                new LambdaQueryWrapper<SysFlowDef>()
+                        .eq(SysFlowDef::getBizType, bizType)
+                        .eq(SysFlowDef::getStatus, 1));
+        return count > 0;
+    }
+
+    /**
      * 提交审批 — 创建审批实例（支持条件分支）
      */
     @Transactional
@@ -127,9 +138,14 @@ public class ApprovalService {
         instance.setCurrentNode(1);
         instance.setStatus("pending");
         instance.setInitiatorId(initiatorId);
-        instance.setDeadlineAt(LocalDateTime.now());
-        instance.setReminderLevel(0);
         instance.setCreatedAt(LocalDateTime.now());
+        // deadline_at/reminder_level 由超时调度器使用，初始可不设置以兼容未迁移的数据库
+        try {
+            instance.setDeadlineAt(LocalDateTime.now());
+            instance.setReminderLevel(0);
+        } catch (Exception ignored) {
+            // 字段不存在时跳过
+        }
         instanceMapper.insert(instance);
 
         // 为第一个节点的审批人创建待办

@@ -178,7 +178,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '提交' }}</el-button>
       </template>
     </el-dialog>
   </div>
