@@ -172,7 +172,7 @@ const queryForm = reactive({ contractName: '', contractType: '', status: '', pag
 const form = reactive({
   contractName: '', contractType: 'expense', projectId: null, supplierId: null,
   amountWithTax: null, amountWithoutTax: null, taxRate: null,
-  signDate: '', startDate: '', endDate: '', partyA: '', partyB: '', remark: ''
+  signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: ''
 })
 
 const rules = {
@@ -210,8 +210,8 @@ const handleEdit = (row) => {
     contractName: row.contract_name, contractType: row.contract_type,
     projectId: row.project_id, supplierId: row.supplier_id,
     amountWithTax: row.amount_with_tax, amountWithoutTax: row.amount_without_tax,
-    taxRate: row.tax_rate, signDate: row.sign_date || '', startDate: row.start_date || '',
-    endDate: row.end_date || '', partyA: row.party_a || '', partyB: row.party_b || '',
+    taxRate: row.tax_rate, signDate: row.sign_date || null, startDate: row.start_date || null,
+    endDate: row.end_date || null, partyA: row.party_a || '', partyB: row.party_b || '',
     remark: row.remark || ''
   })
   dialogVisible.value = true
@@ -221,7 +221,7 @@ const resetForm = () => {
   Object.assign(form, {
     contractName: '', contractType: 'expense', projectId: null, supplierId: null,
     amountWithTax: null, amountWithoutTax: null, taxRate: null,
-    signDate: '', startDate: '', endDate: '', partyA: '', partyB: '', remark: ''
+    signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: ''
   })
   formRef.value?.resetFields()
 }

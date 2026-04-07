@@ -182,7 +182,16 @@ const handlePermissions = async (row) => {
       getPermissionList(),
       getRolePermissions(row.id)
     ])
-    permissionList.value = permRes.data
+    // 将扁平权限列表按 module 分组为树形结构
+    const moduleMap = {}
+    for (const p of permRes.data) {
+      const mod = p.module || '其他'
+      if (!moduleMap[mod]) {
+        moduleMap[mod] = { id: 'mod_' + mod, perm_name: mod, children: [] }
+      }
+      moduleMap[mod].children.push(p)
+    }
+    permissionList.value = Object.values(moduleMap)
     checkedPermIds.value = checkedRes.data
     permDialogVisible.value = true
   } catch (e) {}
@@ -193,7 +202,9 @@ const handleSubmitPerms = async () => {
   try {
     const checkedIds = permTreeRef.value.getCheckedKeys()
     const halfIds = permTreeRef.value.getHalfCheckedKeys()
-    await updateRolePermissions(currentRoleId.value, [...checkedIds, ...halfIds])
+    // 过滤掉虚拟的模块分组节点（id 为字符串 "mod_xxx"）
+    const allIds = [...checkedIds, ...halfIds].filter(id => typeof id === 'number')
+    await updateRolePermissions(currentRoleId.value, allIds)
     ElMessage.success('权限配置成功')
     permDialogVisible.value = false
   } finally {

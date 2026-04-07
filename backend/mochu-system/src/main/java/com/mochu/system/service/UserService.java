@@ -12,6 +12,7 @@ import com.mochu.system.entity.SysDept;
 import com.mochu.system.entity.SysUser;
 import com.mochu.system.entity.SysUserRole;
 import com.mochu.system.mapper.SysDeptMapper;
+import com.mochu.system.mapper.SysRoleMapper;
 import com.mochu.system.mapper.SysUserMapper;
 import com.mochu.system.mapper.SysUserRoleMapper;
 import com.mochu.system.vo.UserVO;
@@ -21,7 +22,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +37,7 @@ public class UserService {
     private final SysUserMapper sysUserMapper;
     private final SysDeptMapper sysDeptMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
+    private final SysRoleMapper sysRoleMapper;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -224,6 +228,9 @@ public class UserService {
         List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
                 new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, user.getId()));
         vo.setRoleIds(userRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList()));
+        // 查询用户权限编码列表
+        Set<String> permCodes = sysRoleMapper.selectPermCodesByUserId(user.getId());
+        vo.setPermissions(new ArrayList<>(permCodes));
         return vo;
     }
 }

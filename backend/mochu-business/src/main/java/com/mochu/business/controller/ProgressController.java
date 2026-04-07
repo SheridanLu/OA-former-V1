@@ -32,9 +32,10 @@ public class ProgressController {
     @PreAuthorize("hasAuthority('progress:view')")
     public R<PageResult<BizGanttTask>> listGanttTasks(
             @RequestParam(required = false) Integer projectId,
+            @RequestParam(required = false) Integer taskType,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
-        return R.ok(progressService.listGanttTasksPaged(projectId, page, size));
+        return R.ok(progressService.listGanttTasksPaged(projectId, taskType, page, size));
     }
 
     @GetMapping("/gantt/{id}")

@@ -393,7 +393,7 @@ const paymentForm = reactive({
 })
 const invoiceForm = reactive({
   invoiceNo: '', invoiceType: '', amount: null, taxRate: null, taxAmount: null,
-  invoiceDate: '', bizType: '', bizId: null, invoiceParty: ''
+  invoiceDate: null, bizType: '', bizId: null, invoiceParty: ''
 })
 const reimburseForm = reactive({
   reimburseType: '', amount: null, deptId: null, projectId: null, description: ''
@@ -481,7 +481,7 @@ const handleEdit = (type, row) => {
   } else if (type === 'invoice') {
     Object.assign(invoiceForm, {
       invoiceNo: row.invoice_no || '', invoiceType: row.invoice_type || '', amount: row.amount,
-      taxRate: row.tax_rate, taxAmount: row.tax_amount, invoiceDate: row.invoice_date || '',
+      taxRate: row.tax_rate, taxAmount: row.tax_amount, invoiceDate: row.invoice_date || null,
       bizType: row.biz_type || '', bizId: row.biz_id, invoiceParty: row.invoice_party || ''
     })
     invoiceDlg.value = true
@@ -502,7 +502,7 @@ const resetForm = (type) => {
     Object.assign(paymentForm, { projectId: null, paymentType: '', contractId: null, amount: null, payeeName: '', payeeBank: '', payeeAccount: '', remark: '' })
     paymentFormRef.value?.resetFields()
   } else if (type === 'invoice') {
-    Object.assign(invoiceForm, { invoiceNo: '', invoiceType: '', amount: null, taxRate: null, taxAmount: null, invoiceDate: '', bizType: '', bizId: null, invoiceParty: '' })
+    Object.assign(invoiceForm, { invoiceNo: '', invoiceType: '', amount: null, taxRate: null, taxAmount: null, invoiceDate: null, bizType: '', bizId: null, invoiceParty: '' })
     invoiceFormRef.value?.resetFields()
   } else {
     Object.assign(reimburseForm, { reimburseType: '', amount: null, deptId: null, projectId: null, description: '' })

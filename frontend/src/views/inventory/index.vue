@@ -239,9 +239,9 @@ const inboundDialogVisible = ref(false)
 const outboundDialogVisible = ref(false)
 const returnDialogVisible = ref(false)
 
-const inboundForm = reactive({ projectId: null, contractId: null, warehouse: '', inboundDate: '', remark: '' })
-const outboundForm = reactive({ projectId: null, outboundType: '', outboundDate: '', remark: '' })
-const returnForm = reactive({ projectId: null, disposeMethod: '', targetProjectId: null, returnDate: '', remark: '' })
+const inboundForm = reactive({ projectId: null, contractId: null, warehouse: '', inboundDate: null, remark: '' })
+const outboundForm = reactive({ projectId: null, outboundType: '', outboundDate: null, remark: '' })
+const returnForm = reactive({ projectId: null, disposeMethod: '', targetProjectId: null, returnDate: null, remark: '' })
 
 const inboundRules = {
   projectId: [{ required: true, message: '请选择关联项目', trigger: 'change' }],
@@ -293,28 +293,28 @@ const handleEdit = (type, row) => {
   if (type === 'inbound') {
     Object.assign(inboundForm, {
       projectId: row.project_id, contractId: row.contract_id,
-      warehouse: row.warehouse || '', inboundDate: row.inbound_date || '', remark: row.remark || ''
+      warehouse: row.warehouse || '', inboundDate: row.inbound_date || null, remark: row.remark || ''
     })
     inboundDialogVisible.value = true
   } else if (type === 'outbound') {
     Object.assign(outboundForm, {
       projectId: row.project_id, outboundType: row.outbound_type || '',
-      outboundDate: row.outbound_date || '', remark: row.remark || ''
+      outboundDate: row.outbound_date || null, remark: row.remark || ''
     })
     outboundDialogVisible.value = true
   } else {
     Object.assign(returnForm, {
       projectId: row.project_id, disposeMethod: row.dispose_method || '',
-      targetProjectId: row.target_project_id, returnDate: row.return_date || '', remark: row.remark || ''
+      targetProjectId: row.target_project_id, returnDate: row.return_date || null, remark: row.remark || ''
     })
     returnDialogVisible.value = true
   }
 }
 
 const resetForm = () => {
-  Object.assign(inboundForm, { projectId: null, contractId: null, warehouse: '', inboundDate: '', remark: '' })
-  Object.assign(outboundForm, { projectId: null, outboundType: '', outboundDate: '', remark: '' })
-  Object.assign(returnForm, { projectId: null, disposeMethod: '', targetProjectId: null, returnDate: '', remark: '' })
+  Object.assign(inboundForm, { projectId: null, contractId: null, warehouse: '', inboundDate: null, remark: '' })
+  Object.assign(outboundForm, { projectId: null, outboundType: '', outboundDate: null, remark: '' })
+  Object.assign(returnForm, { projectId: null, disposeMethod: '', targetProjectId: null, returnDate: null, remark: '' })
   formRef.value?.resetFields()
 }
 

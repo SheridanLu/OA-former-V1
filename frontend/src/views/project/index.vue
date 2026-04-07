@@ -222,9 +222,9 @@ const form = reactive({
   amountWithTax: null,
   amountWithoutTax: null,
   taxRate: null,
-  planStartDate: '',
-  planEndDate: '',
-  warrantyDate: '',
+  planStartDate: null,
+  planEndDate: null,
+  warrantyDate: null,
   remark: ''
 })
 
@@ -277,9 +277,9 @@ const handleEdit = (row) => {
   form.amountWithTax = row.amount_with_tax
   form.amountWithoutTax = row.amount_without_tax
   form.taxRate = row.tax_rate
-  form.planStartDate = row.plan_start_date || ''
-  form.planEndDate = row.plan_end_date || ''
-  form.warrantyDate = row.warranty_date || ''
+  form.planStartDate = row.plan_start_date || null
+  form.planEndDate = row.plan_end_date || null
+  form.warrantyDate = row.warranty_date || null
   form.remark = row.remark || ''
   dialogVisible.value = true
 }
@@ -288,7 +288,7 @@ const resetForm = () => {
   Object.assign(form, {
     projectName: '', projectAlias: '', projectType: 2, contractType: '',
     clientName: '', location: '', amountWithTax: null, amountWithoutTax: null,
-    taxRate: null, planStartDate: '', planEndDate: '', warrantyDate: '', remark: ''
+    taxRate: null, planStartDate: null, planEndDate: null, warrantyDate: null, remark: ''
   })
   formRef.value?.resetFields()
 }

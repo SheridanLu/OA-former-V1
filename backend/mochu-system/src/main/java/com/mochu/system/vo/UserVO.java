@@ -54,4 +54,7 @@ public class UserVO {
 
     /** 用户当前角色ID列表 */
     private List<Integer> roleIds;
+
+    /** 用户权限编码列表 */
+    private List<String> permissions;
 }

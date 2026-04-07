@@ -48,7 +48,7 @@ public class ProgressService {
     /**
      * 分页查询甘特图任务，projectId 可选
      */
-    public PageResult<BizGanttTask> listGanttTasksPaged(Integer projectId, Integer page, Integer size) {
+    public PageResult<BizGanttTask> listGanttTasksPaged(Integer projectId, Integer taskType, Integer page, Integer size) {
         int p = (page == null || page < 1) ? Constants.DEFAULT_PAGE : page;
         int s = (size == null || size < 1) ? Constants.DEFAULT_SIZE : size;
 
@@ -57,6 +57,9 @@ public class ProgressService {
 
         if (projectId != null) {
             wrapper.eq(BizGanttTask::getProjectId, projectId);
+        }
+        if (taskType != null) {
+            wrapper.eq(BizGanttTask::getTaskType, taskType);
         }
         wrapper.orderByAsc(BizGanttTask::getSortOrder)
                .orderByAsc(BizGanttTask::getId);

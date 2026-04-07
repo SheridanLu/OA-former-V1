@@ -1,31 +1,148 @@
 <template>
   <div class="progress-page">
     <el-card shadow="never">
+      <!-- 全局项目筛选 -->
+      <el-form inline style="margin-bottom: 0">
+        <el-form-item label="关联项目">
+          <el-select v-model="filterProjectId" filterable clearable placeholder="全部项目" style="width: 220px" @change="handleProjectChange">
+            <el-option v-for="p in projects" :key="p.id" :label="p.project_name || p.projectName" :value="p.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" style="margin-top: 12px">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-        <!-- ==================== 进度管理 ==================== -->
-        <el-tab-pane label="进度管理" name="gantt">
+        <!-- ==================== 里程碑管理 ==================== -->
+        <el-tab-pane label="里程碑管理" name="milestone">
           <div style="margin-bottom: 12px">
-            <el-button type="primary" @click="handleAddGantt">新建任务</el-button>
+            <el-button type="primary" @click="handleAddMilestone">新建里程碑</el-button>
           </div>
-          <el-table :data="tableData" v-loading="loading" stripe border>
-            <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="task_name" label="任务名称" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="task_type" label="类型" width="80">
-              <template #default="{ row }">{{ row.task_type === 1 ? '里程碑' : '任务' }}</template>
+          <el-table :data="milestoneData" v-loading="loading" stripe border>
+            <el-table-column prop="task_name" label="里程碑名称" min-width="200" show-overflow-tooltip />
+            <el-table-column label="关联项目" width="120">
+              <template #default="{ row }">{{ projectNameMap[row.project_id] || row.project_id }}</template>
             </el-table-column>
             <el-table-column prop="plan_start_date" label="计划开始" width="110" />
             <el-table-column prop="plan_end_date" label="计划结束" width="110" />
-            <el-table-column prop="progress_pct" label="进度(%)" width="100" align="right" />
-            <el-table-column prop="status" label="状态" width="90">
-              <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
-            </el-table-column>
-            <el-table-column label="操作" width="160">
+            <el-table-column prop="actual_start_date" label="实际开始" width="110" />
+            <el-table-column prop="actual_end_date" label="实际结束" width="110" />
+            <el-table-column prop="progress_pct" label="进度(%)" width="90" align="right" />
+            <el-table-column label="状态" width="90">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="handleEditGantt(row)">编辑</el-button>
+                <el-tag :type="statusTagType[row.status]" size="small">{{ statusLabel[row.status] || row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220">
+              <template #default="{ row }">
+                <el-button type="primary" link size="small" @click="handleEditMilestone(row)">编辑</el-button>
+                <el-dropdown @command="(cmd) => handleStatusChange(row, cmd)" style="margin-left: 4px">
+                  <el-button type="warning" link size="small">状态<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="pending" :disabled="row.status === 'pending'">提交审批</el-dropdown-item>
+                      <el-dropdown-item command="approved" :disabled="row.status === 'approved'">审批通过</el-dropdown-item>
+                      <el-dropdown-item command="locked" :disabled="row.status === 'locked'">锁定</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
                 <el-button type="danger" link size="small" @click="handleDeleteGantt(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
+          <el-pagination v-if="milestoneTotal > 0" style="margin-top: 16px; justify-content: flex-end" background
+            layout="total, prev, pager, next" :total="milestoneTotal"
+            v-model:current-page="milestonePage" @current-change="fetchMilestones" />
+        </el-tab-pane>
+
+        <!-- ==================== 甘特图管理 ==================== -->
+        <el-tab-pane label="甘特图管理" name="gantt">
+          <div style="margin-bottom: 12px">
+            <el-button type="primary" @click="handleAddGantt">新建任务</el-button>
+          </div>
+
+          <!-- 甘特图可视化 -->
+          <div v-if="ganttData.length > 0" class="gantt-chart-wrapper">
+            <table class="gantt-chart" border="0" cellspacing="0">
+              <thead>
+                <tr>
+                  <th style="min-width: 200px; text-align: left; padding: 6px 8px">任务名称</th>
+                  <th style="width: 80px">进度</th>
+                  <th style="width: 90px">状态</th>
+                  <th style="min-width: 400px; text-align: left; padding: 6px 8px">时间线</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in ganttData" :key="row.id" :class="{ 'gantt-milestone-row': row.task_type === 1 }">
+                  <td style="padding: 6px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">
+                    <span v-if="row.task_type === 1" style="font-weight: bold">◆ {{ row.task_name }}</span>
+                    <span v-else style="padding-left: 16px">├ {{ row.task_name }}</span>
+                  </td>
+                  <td style="text-align: center">{{ row.progress_pct }}%</td>
+                  <td style="text-align: center">
+                    <el-tag :type="statusTagType[row.status]" size="small">{{ statusLabel[row.status] || row.status }}</el-tag>
+                  </td>
+                  <td style="padding: 6px 8px">
+                    <div class="gantt-bar-container">
+                      <div class="gantt-bar"
+                        :style="ganttBarStyle(row)"
+                        :title="`${row.plan_start_date || '?'} ~ ${row.plan_end_date || '?'}`">
+                        <div class="gantt-bar-fill" :style="{ width: (row.progress_pct || 0) + '%' }"></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 详细列表 -->
+          <el-table :data="ganttData" v-loading="loading" stripe border style="margin-top: 12px">
+            <el-table-column label="任务名称" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span v-if="row.task_type === 1" style="font-weight: bold">◆ {{ row.task_name }}</span>
+                <span v-else style="padding-left: 16px">{{ row.task_name }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="所属里程碑" width="140">
+              <template #default="{ row }">{{ row.parent_id ? milestoneNameMap[row.parent_id] || row.parent_id : '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="plan_start_date" label="计划开始" width="110" />
+            <el-table-column prop="plan_end_date" label="计划结束" width="110" />
+            <el-table-column prop="actual_start_date" label="实际开始" width="110" />
+            <el-table-column prop="actual_end_date" label="实际结束" width="110" />
+            <el-table-column prop="progress_pct" label="进度(%)" width="85" align="right" />
+            <el-table-column label="依赖" width="100">
+              <template #default="{ row }">
+                <span v-if="row.dependency_task_id">{{ row.dependency_type || 'FS' }} #{{ row.dependency_task_id }}</span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag :type="statusTagType[row.status]" size="small">{{ statusLabel[row.status] || row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220">
+              <template #default="{ row }">
+                <el-button type="primary" link size="small" @click="handleEditGanttRow(row)">编辑</el-button>
+                <el-dropdown @command="(cmd) => handleStatusChange(row, cmd)" style="margin-left: 4px">
+                  <el-button type="warning" link size="small">状态<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="pending">提交审批</el-dropdown-item>
+                      <el-dropdown-item command="approved">审批通过</el-dropdown-item>
+                      <el-dropdown-item command="locked">锁定</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+                <el-button type="danger" link size="small" @click="handleDeleteGantt(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-pagination v-if="ganttTotal > 0" style="margin-top: 16px; justify-content: flex-end" background
+            layout="total, prev, pager, next" :total="ganttTotal"
+            v-model:current-page="ganttPage" @current-change="fetchGanttTasks" />
         </el-tab-pane>
 
         <!-- ==================== 变更管理 ==================== -->
@@ -33,34 +150,51 @@
           <div style="margin-bottom: 12px">
             <el-button type="primary" @click="handleAddChange">新建变更单</el-button>
           </div>
-          <el-table :data="tableData" v-loading="loading" stripe border>
+          <el-table :data="changeData" v-loading="changeLoading" stripe border>
             <el-table-column prop="change_no" label="变更编号" width="140" />
-            <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="change_type" label="变更类型" width="120" />
+            <el-table-column label="关联项目" width="120">
+              <template #default="{ row }">{{ projectNameMap[row.project_id] || row.project_id }}</template>
+            </el-table-column>
+            <el-table-column label="变更类型" width="110">
+              <template #default="{ row }">{{ changeTypeLabel[row.change_type] || row.change_type }}</template>
+            </el-table-column>
             <el-table-column prop="title" label="变更标题" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="total_amount" label="变更金额" width="130" align="right" />
-            <el-table-column prop="status" label="状态" width="90">
-              <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
+            <el-table-column prop="total_amount" label="变更金额" width="130" align="right">
+              <template #default="{ row }">{{ row.total_amount ? Number(row.total_amount).toLocaleString() : '-' }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="changeStatusType[row.status]" size="small">{{ changeStatusLabel[row.status] || row.status }}</el-tag>
+              </template>
             </el-table-column>
             <el-table-column prop="created_at" label="创建时间" width="170" />
-            <el-table-column label="操作" width="160">
+            <el-table-column label="操作" width="220">
               <template #default="{ row }">
                 <el-button type="primary" link size="small" @click="handleEditChange(row)">编辑</el-button>
+                <el-dropdown @command="(cmd) => handleChangeStatusUpdate(row, cmd)" style="margin-left: 4px">
+                  <el-button type="warning" link size="small">状态<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="pending">提交审批</el-dropdown-item>
+                      <el-dropdown-item command="approved">审批通过</el-dropdown-item>
+                      <el-dropdown-item command="rejected">驳回</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
                 <el-button type="danger" link size="small" @click="handleDeleteChange(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
+          <el-pagination v-if="changeTotal > 0" style="margin-top: 16px; justify-content: flex-end" background
+            layout="total, prev, pager, next" :total="changeTotal"
+            v-model:current-page="changePage" @current-change="fetchChanges" />
         </el-tab-pane>
       </el-tabs>
-
-      <el-pagination v-if="total > 0" style="margin-top: 16px; justify-content: flex-end" background
-        layout="total, prev, pager, next" :total="total"
-        v-model:current-page="page" @current-change="fetchData" />
     </el-card>
 
-    <!-- ==================== 甘特任务对话框 ==================== -->
-    <el-dialog v-model="ganttDialogVisible" :title="isEdit ? '编辑任务' : '新建任务'" width="700px" @closed="resetGanttForm">
-      <el-form ref="ganttFormRef" :model="ganttForm" :rules="ganttRules" label-width="100px">
+    <!-- ==================== 里程碑/甘特任务对话框 ==================== -->
+    <el-dialog v-model="ganttDialogVisible" :title="ganttDialogTitle" width="750px" @closed="resetGanttForm">
+      <el-form ref="ganttFormRef" :model="ganttForm" :rules="ganttRules" label-width="110px">
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="关联项目" prop="projectId">
@@ -81,6 +215,30 @@
         <el-form-item label="任务名称" prop="taskName">
           <el-input v-model="ganttForm.taskName" />
         </el-form-item>
+        <el-row :gutter="16" v-if="ganttForm.taskType === 2">
+          <el-col :span="12">
+            <el-form-item label="所属里程碑">
+              <el-select v-model="ganttForm.parentId" filterable clearable placeholder="选择里程碑" style="width: 100%">
+                <el-option v-for="m in allMilestones" :key="m.id" :label="m.task_name" :value="m.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="依赖类型">
+              <el-select v-model="ganttForm.dependencyType" clearable placeholder="类型" style="width: 100%">
+                <el-option label="FS" value="FS" />
+                <el-option label="SS" value="SS" />
+                <el-option label="FF" value="FF" />
+                <el-option label="SF" value="SF" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="依赖任务ID">
+              <el-input-number v-model="ganttForm.dependencyTaskId" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="计划开始">
@@ -108,16 +266,11 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="进度(%)">
-              <el-input-number v-model="ganttForm.progressPct" :min="0" :max="100" :precision="1" controls-position="right" style="width: 100%" />
+              <el-slider v-model="ganttForm.progressPct" :max="100" :step="1" show-input input-size="small" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="父任务ID">
-              <el-input-number v-model="ganttForm.parentId" :min="0" controls-position="right" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="排序">
+            <el-form-item label="排序号">
               <el-input-number v-model="ganttForm.sortOrder" :min="0" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
@@ -130,7 +283,7 @@
     </el-dialog>
 
     <!-- ==================== 变更单对话框 ==================== -->
-    <el-dialog v-model="changeDialogVisible" :title="isEdit ? '编辑变更单' : '新建变更单'" width="850px" @closed="resetChangeForm">
+    <el-dialog v-model="changeDialogVisible" :title="isEditChange ? '编辑变更单' : '新建变更单'" width="850px" @closed="resetChangeForm">
       <el-form ref="changeFormRef" :model="changeForm" :rules="changeRules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -148,6 +301,13 @@
                 <el-option label="超量" value="overage" />
                 <el-option label="劳务签证" value="labor_visa" />
               </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="关联合同">
+              <el-input-number v-model="changeForm.contractId" :min="1" controls-position="right" placeholder="合同ID" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -198,45 +358,89 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import {
-  getGanttTaskList, createGanttTask, updateGanttTask, deleteGanttTask,
-  getChangeOrderList, createChangeOrder, updateChangeOrder, deleteChangeOrder,
+  getGanttTaskList, createGanttTask, updateGanttTask, updateGanttTaskStatus, deleteGanttTask,
+  getChangeOrderList, createChangeOrder, updateChangeOrder, updateChangeOrderStatus, deleteChangeOrder,
   getChangeOrderDetails
 } from '@/api/progress'
 import { getAllProjects } from '@/api/project'
 
-const loading = ref(false)
-const submitting = ref(false)
-const activeTab = ref('gantt')
-const tableData = ref([])
-const total = ref(0)
-const page = ref(1)
-const projects = ref([])
-const isEdit = ref(false)
-const editId = ref(null)
+// ====== 常量 ======
+const statusLabel = { draft: '草稿', pending: '审批中', approved: '已审批', locked: '已锁定' }
+const statusTagType = { draft: 'info', pending: 'warning', approved: 'success', locked: '' }
+const changeTypeLabel = { visa: '签证', owner_change: '业主变更', overage: '超量', labor_visa: '劳务签证' }
+const changeStatusLabel = { draft: '草稿', pending: '审批中', approved: '已审批', rejected: '已驳回' }
+const changeStatusType = { draft: 'info', pending: 'warning', approved: 'success', rejected: 'danger' }
 
-// ====== 甘特任务 ======
-const ganttDialogVisible = ref(false)
-const ganttFormRef = ref(null)
-const ganttForm = reactive({
-  projectId: null, parentId: null, taskName: '', taskType: 2,
-  planStartDate: '', planEndDate: '', actualStartDate: '', actualEndDate: '',
-  progressPct: 0, sortOrder: 0
+// ====== 共享状态 ======
+const loading = ref(false)
+const changeLoading = ref(false)
+const submitting = ref(false)
+const activeTab = ref('milestone')
+const projects = ref([])
+const filterProjectId = ref(null)
+const allMilestones = ref([])
+
+// 项目名称映射
+const projectNameMap = computed(() => {
+  const map = {}
+  projects.value.forEach(p => { map[p.id] = p.project_name || p.projectName })
+  return map
 })
+
+// 里程碑名称映射
+const milestoneNameMap = computed(() => {
+  const map = {}
+  allMilestones.value.forEach(m => { map[m.id] = m.task_name })
+  return map
+})
+
+// ====== 里程碑数据 ======
+const milestoneData = ref([])
+const milestoneTotal = ref(0)
+const milestonePage = ref(1)
+
+// ====== 甘特图数据 ======
+const ganttData = ref([])
+const ganttTotal = ref(0)
+const ganttPage = ref(1)
+
+// ====== 变更单数据 ======
+const changeData = ref([])
+const changeTotal = ref(0)
+const changePage = ref(1)
+
+// ====== 甘特任务表单 ======
+const ganttDialogVisible = ref(false)
+const ganttDialogTitle = ref('新建里程碑')
+const ganttFormRef = ref(null)
+const isEditGantt = ref(false)
+const editGanttId = ref(null)
+
+const ganttForm = reactive({
+  projectId: null, parentId: null, taskName: '', taskType: 1,
+  planStartDate: null, planEndDate: null, actualStartDate: null, actualEndDate: null,
+  progressPct: 0, sortOrder: 0, dependencyType: null, dependencyTaskId: null
+})
+
 const ganttRules = {
   projectId: [{ required: true, message: '请选择关联项目', trigger: 'change' }],
   taskName: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
   taskType: [{ required: true, message: '请选择任务类型', trigger: 'change' }]
 }
 
-// ====== 变更单 ======
+// ====== 变更单表单 ======
 const changeDialogVisible = ref(false)
 const changeFormRef = ref(null)
+const isEditChange = ref(false)
+const editChangeId = ref(null)
+
 const createEmptyDetail = () => ({ itemName: '', specModel: '', unit: '', planQuantity: null, actualQuantity: null, unitPrice: null })
 const changeForm = reactive({
-  projectId: null, changeType: '', title: '', description: '',
+  projectId: null, contractId: null, changeType: '', title: '', description: '',
   details: [createEmptyDetail()]
 })
 const changeRules = {
@@ -245,41 +449,152 @@ const changeRules = {
   title: [{ required: true, message: '请输入变更标题', trigger: 'blur' }]
 }
 
-const fetchData = async () => {
-  loading.value = true
-  try {
-    const fn = activeTab.value === 'gantt' ? getGanttTaskList : getChangeOrderList
-    const res = await fn({ page: page.value, size: 20 })
-    tableData.value = res.data.records || []
-    total.value = res.data.total || 0
-  } finally { loading.value = false }
+// ====== 甘特图时间线计算 ======
+const ganttTimeRange = computed(() => {
+  const allTasks = ganttData.value
+  if (!allTasks.length) return { min: null, max: null, days: 1 }
+  let min = null, max = null
+  allTasks.forEach(t => {
+    const s = t.plan_start_date ? new Date(t.plan_start_date) : null
+    const e = t.plan_end_date ? new Date(t.plan_end_date) : null
+    if (s && (!min || s < min)) min = s
+    if (e && (!max || e > max)) max = e
+  })
+  if (!min || !max) return { min: null, max: null, days: 1 }
+  const days = Math.max(1, Math.ceil((max - min) / 86400000) + 1)
+  return { min, max, days }
+})
+
+const ganttBarStyle = (row) => {
+  const { min, days } = ganttTimeRange.value
+  if (!min || !row.plan_start_date || !row.plan_end_date) return { display: 'none' }
+  const s = new Date(row.plan_start_date)
+  const e = new Date(row.plan_end_date)
+  const startOffset = Math.max(0, (s - min) / 86400000)
+  const duration = Math.max(1, (e - s) / 86400000 + 1)
+  const left = (startOffset / days * 100).toFixed(2) + '%'
+  const width = (duration / days * 100).toFixed(2) + '%'
+  return { left, width, position: 'absolute', top: '4px', height: '20px' }
 }
 
+// ====== 数据加载 ======
 const loadProjects = async () => {
   try { const res = await getAllProjects(); projects.value = res.data || [] } catch { /* ignore */ }
 }
 
-const handleTabChange = () => { page.value = 1; fetchData() }
+const loadAllMilestones = async () => {
+  try {
+    const res = await getGanttTaskList({ taskType: 1, size: 500 })
+    allMilestones.value = res.data.records || []
+  } catch { /* ignore */ }
+}
+
+const fetchMilestones = async () => {
+  loading.value = true
+  try {
+    const params = { page: milestonePage.value, size: 20, taskType: 1 }
+    if (filterProjectId.value) params.projectId = filterProjectId.value
+    const res = await getGanttTaskList(params)
+    milestoneData.value = res.data.records || []
+    milestoneTotal.value = res.data.total || 0
+  } finally { loading.value = false }
+}
+
+const fetchGanttTasks = async () => {
+  loading.value = true
+  try {
+    const params = { page: ganttPage.value, size: 200 }
+    if (filterProjectId.value) params.projectId = filterProjectId.value
+    const res = await getGanttTaskList(params)
+    const allRecords = res.data.records || []
+    // 构建树形排列：先里程碑，每个里程碑后跟其子任务
+    const milestones = allRecords.filter(t => t.task_type === 1).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    const tasks = allRecords.filter(t => t.task_type === 2)
+    const sorted = []
+    milestones.forEach(m => {
+      sorted.push(m)
+      tasks.filter(t => t.parent_id === m.id).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).forEach(t => sorted.push(t))
+    })
+    // 无里程碑的独立任务
+    tasks.filter(t => !t.parent_id || !milestones.find(m => m.id === t.parent_id)).forEach(t => sorted.push(t))
+    ganttData.value = sorted
+    ganttTotal.value = res.data.total || 0
+  } finally { loading.value = false }
+}
+
+const fetchChanges = async () => {
+  changeLoading.value = true
+  try {
+    const params = { page: changePage.value, size: 20 }
+    if (filterProjectId.value) params.projectId = filterProjectId.value
+    const res = await getChangeOrderList(params)
+    changeData.value = res.data.records || []
+    changeTotal.value = res.data.total || 0
+  } finally { changeLoading.value = false }
+}
+
+const handleProjectChange = () => {
+  milestonePage.value = 1; ganttPage.value = 1; changePage.value = 1
+  fetchCurrentTab()
+}
+
+const handleTabChange = () => { fetchCurrentTab() }
+
+const fetchCurrentTab = () => {
+  if (activeTab.value === 'milestone') fetchMilestones()
+  else if (activeTab.value === 'gantt') fetchGanttTasks()
+  else fetchChanges()
+}
+
+// ====== 里程碑 CRUD ======
+const handleAddMilestone = () => {
+  isEditGantt.value = false; editGanttId.value = null
+  ganttForm.taskType = 1; ganttForm.parentId = null
+  ganttDialogTitle.value = '新建里程碑'
+  loadProjects()
+  ganttDialogVisible.value = true
+}
+
+const handleEditMilestone = (row) => {
+  isEditGantt.value = true; editGanttId.value = row.id
+  ganttDialogTitle.value = '编辑里程碑'
+  populateGanttForm(row)
+  loadProjects()
+  ganttDialogVisible.value = true
+}
 
 // ====== 甘特任务 CRUD ======
-const handleAddGantt = () => { isEdit.value = false; editId.value = null; loadProjects(); ganttDialogVisible.value = true }
-
-const handleEditGantt = (row) => {
-  isEdit.value = true; editId.value = row.id; loadProjects()
-  Object.assign(ganttForm, {
-    projectId: row.project_id, parentId: row.parent_id, taskName: row.task_name || '', taskType: row.task_type,
-    planStartDate: row.plan_start_date || '', planEndDate: row.plan_end_date || '',
-    actualStartDate: row.actual_start_date || '', actualEndDate: row.actual_end_date || '',
-    progressPct: row.progress_pct || 0, sortOrder: row.sort_order || 0
-  })
+const handleAddGantt = () => {
+  isEditGantt.value = false; editGanttId.value = null
+  ganttForm.taskType = 2; ganttForm.parentId = null
+  ganttDialogTitle.value = '新建任务'
+  loadProjects(); loadAllMilestones()
   ganttDialogVisible.value = true
+}
+
+const handleEditGanttRow = (row) => {
+  isEditGantt.value = true; editGanttId.value = row.id
+  ganttDialogTitle.value = row.task_type === 1 ? '编辑里程碑' : '编辑任务'
+  populateGanttForm(row)
+  loadProjects(); loadAllMilestones()
+  ganttDialogVisible.value = true
+}
+
+const populateGanttForm = (row) => {
+  Object.assign(ganttForm, {
+    projectId: row.project_id, parentId: row.parent_id || null, taskName: row.task_name || '',
+    taskType: row.task_type, planStartDate: row.plan_start_date || null, planEndDate: row.plan_end_date || null,
+    actualStartDate: row.actual_start_date || null, actualEndDate: row.actual_end_date || null,
+    progressPct: row.progress_pct || 0, sortOrder: row.sort_order || 0,
+    dependencyType: row.dependency_type || null, dependencyTaskId: row.dependency_task_id || null
+  })
 }
 
 const resetGanttForm = () => {
   Object.assign(ganttForm, {
-    projectId: null, parentId: null, taskName: '', taskType: 2,
-    planStartDate: '', planEndDate: '', actualStartDate: '', actualEndDate: '',
-    progressPct: 0, sortOrder: 0
+    projectId: null, parentId: null, taskName: '', taskType: 1,
+    planStartDate: null, planEndDate: null, actualStartDate: null, actualEndDate: null,
+    progressPct: 0, sortOrder: 0, dependencyType: null, dependencyTaskId: null
   })
   ganttFormRef.value?.resetFields()
 }
@@ -288,22 +603,43 @@ const submitGantt = async () => {
   await ganttFormRef.value.validate()
   submitting.value = true
   try {
-    if (isEdit.value) { await updateGanttTask(editId.value, ganttForm); ElMessage.success('更新成功') }
-    else { await createGanttTask(ganttForm); ElMessage.success('创建成功') }
-    ganttDialogVisible.value = false; fetchData()
+    if (isEditGantt.value) {
+      await updateGanttTask(editGanttId.value, ganttForm)
+      ElMessage.success('更新成功')
+    } else {
+      await createGanttTask(ganttForm)
+      ElMessage.success('创建成功')
+    }
+    ganttDialogVisible.value = false
+    fetchCurrentTab(); loadAllMilestones()
   } finally { submitting.value = false }
 }
 
+const handleStatusChange = async (row, status) => {
+  await ElMessageBox.confirm(`确定将状态改为"${statusLabel[status]}"？`, '提示', { type: 'warning' })
+  await updateGanttTaskStatus(row.id, status)
+  ElMessage.success('状态已更新')
+  fetchCurrentTab()
+}
+
 const handleDeleteGantt = async (row) => {
-  await ElMessageBox.confirm('确定删除该任务？', '提示', { type: 'warning' })
-  await deleteGanttTask(row.id); ElMessage.success('删除成功'); fetchData()
+  const label = row.task_type === 1 ? '里程碑' : '任务'
+  await ElMessageBox.confirm(`确定删除该${label}？`, '提示', { type: 'warning' })
+  await deleteGanttTask(row.id)
+  ElMessage.success('删除成功')
+  fetchCurrentTab(); loadAllMilestones()
 }
 
 // ====== 变更单 CRUD ======
-const handleAddChange = () => { isEdit.value = false; editId.value = null; loadProjects(); changeDialogVisible.value = true }
+const handleAddChange = () => {
+  isEditChange.value = false; editChangeId.value = null
+  loadProjects()
+  changeDialogVisible.value = true
+}
 
 const handleEditChange = async (row) => {
-  isEdit.value = true; editId.value = row.id; loadProjects()
+  isEditChange.value = true; editChangeId.value = row.id
+  loadProjects()
   let existingDetails = [createEmptyDetail()]
   try {
     const res = await getChangeOrderDetails(row.id)
@@ -316,7 +652,7 @@ const handleEditChange = async (row) => {
     }
   } catch { /* ignore */ }
   Object.assign(changeForm, {
-    projectId: row.project_id, changeType: row.change_type || '', title: row.title || '',
+    projectId: row.project_id, contractId: row.contract_id || null, changeType: row.change_type || '', title: row.title || '',
     description: row.description || '', details: existingDetails
   })
   changeDialogVisible.value = true
@@ -324,7 +660,7 @@ const handleEditChange = async (row) => {
 
 const resetChangeForm = () => {
   Object.assign(changeForm, {
-    projectId: null, changeType: '', title: '', description: '',
+    projectId: null, contractId: null, changeType: '', title: '', description: '',
     details: [createEmptyDetail()]
   })
   changeFormRef.value?.resetFields()
@@ -334,21 +670,80 @@ const addChangeDetail = () => { changeForm.details.push(createEmptyDetail()) }
 
 const submitChange = async () => {
   await changeFormRef.value.validate()
-  const details = changeForm.details.filter(d => d.itemName)
-  const totalAmount = details.reduce((s, d) => s + ((d.actualQuantity || 0) - (d.planQuantity || 0)) * (d.unitPrice || 0), 0)
-  const payload = { projectId: changeForm.projectId, changeType: changeForm.changeType, title: changeForm.title, description: changeForm.description, totalAmount, details }
+  const details = changeForm.details.filter(d => d.itemName).map(d => {
+    const diff = (d.actualQuantity || 0) - (d.planQuantity || 0)
+    return { ...d, diffQuantity: diff, subtotal: diff * (d.unitPrice || 0) }
+  })
+  const totalAmount = details.reduce((s, d) => s + (d.subtotal || 0), 0)
+  const payload = { projectId: changeForm.projectId, contractId: changeForm.contractId, changeType: changeForm.changeType, title: changeForm.title, description: changeForm.description, totalAmount, details }
   submitting.value = true
   try {
-    if (isEdit.value) { await updateChangeOrder(editId.value, payload); ElMessage.success('更新成功') }
+    if (isEditChange.value) { await updateChangeOrder(editChangeId.value, payload); ElMessage.success('更新成功') }
     else { await createChangeOrder(payload); ElMessage.success('创建成功') }
-    changeDialogVisible.value = false; fetchData()
+    changeDialogVisible.value = false; fetchChanges()
   } finally { submitting.value = false }
+}
+
+const handleChangeStatusUpdate = async (row, status) => {
+  await ElMessageBox.confirm(`确定将状态改为"${changeStatusLabel[status]}"？`, '提示', { type: 'warning' })
+  await updateChangeOrderStatus(row.id, status)
+  ElMessage.success('状态已更新')
+  fetchChanges()
 }
 
 const handleDeleteChange = async (row) => {
   await ElMessageBox.confirm('确定删除该变更单？', '提示', { type: 'warning' })
-  await deleteChangeOrder(row.id); ElMessage.success('删除成功'); fetchData()
+  await deleteChangeOrder(row.id)
+  ElMessage.success('删除成功')
+  fetchChanges()
 }
 
-onMounted(() => { fetchData() })
+onMounted(() => {
+  loadProjects()
+  loadAllMilestones()
+  fetchMilestones()
+})
 </script>
+
+<style scoped>
+.gantt-chart-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+.gantt-chart {
+  width: 100%;
+  border-collapse: collapse;
+}
+.gantt-chart th {
+  background: var(--el-fill-color-light);
+  border-bottom: 1px solid var(--el-border-color);
+  font-size: 13px;
+  font-weight: 500;
+}
+.gantt-chart td {
+  border-bottom: 1px solid var(--el-border-color-extra-light);
+  font-size: 13px;
+}
+.gantt-milestone-row {
+  background: var(--el-color-primary-light-9);
+}
+.gantt-bar-container {
+  position: relative;
+  height: 28px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 4px;
+}
+.gantt-bar {
+  background: var(--el-color-primary-light-5);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.gantt-bar-fill {
+  height: 100%;
+  background: var(--el-color-primary);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+</style>

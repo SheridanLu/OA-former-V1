@@ -32,7 +32,10 @@ function convertKeysToSnakeCase(obj) {
   const result = {}
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      result[toSnakeCase(key)] = convertKeysToSnakeCase(obj[key])
+      let val = obj[key]
+      // 空字符串转 null，防止 Jackson 对 LocalDate/Integer/BigDecimal 等非 String 类型反序列化失败
+      if (val === '') val = null
+      result[toSnakeCase(key)] = convertKeysToSnakeCase(val)
     }
   }
   return result

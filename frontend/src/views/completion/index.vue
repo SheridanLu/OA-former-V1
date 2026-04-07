@@ -280,7 +280,7 @@ const caseDlg = ref(false)
 const exceptionDlg = ref(false)
 
 // ====== Forms ======
-const finishForm = reactive({ projectId: null, title: '', planFinishDate: '', finishContent: '', selfCheckResult: '', remainingIssues: '' })
+const finishForm = reactive({ projectId: null, title: '', planFinishDate: null, finishContent: '', selfCheckResult: '', remainingIssues: '' })
 const laborForm = reactive({ projectId: null, contractId: null, settlementAmount: null, paidAmount: null, applyPayAmount: null })
 const caseForm = reactive({ projectId: null, caseName: '', caseType: '', summary: '', content: '' })
 const exceptionForm = reactive({ bizType: '', bizId: null, failReason: '', handlerId: null })
@@ -335,7 +335,7 @@ const handleEdit = (type, row) => {
   isEdit.value = true; editId.value = row.id; loadProjects()
   if (type === 'finish') {
     Object.assign(finishForm, {
-      projectId: row.project_id, title: row.title || '', planFinishDate: row.plan_finish_date || '',
+      projectId: row.project_id, title: row.title || '', planFinishDate: row.plan_finish_date || null,
       finishContent: row.finish_content || '', selfCheckResult: row.self_check_result || '',
       remainingIssues: row.remaining_issues || ''
     })
@@ -357,7 +357,7 @@ const handleEdit = (type, row) => {
 }
 
 const resetForm = () => {
-  Object.assign(finishForm, { projectId: null, title: '', planFinishDate: '', finishContent: '', selfCheckResult: '', remainingIssues: '' })
+  Object.assign(finishForm, { projectId: null, title: '', planFinishDate: null, finishContent: '', selfCheckResult: '', remainingIssues: '' })
   Object.assign(laborForm, { projectId: null, contractId: null, settlementAmount: null, paidAmount: null, applyPayAmount: null })
   Object.assign(caseForm, { projectId: null, caseName: '', caseType: '', summary: '', content: '' })
   Object.assign(exceptionForm, { bizType: '', bizId: null, failReason: '', handlerId: null })

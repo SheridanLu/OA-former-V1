@@ -36,6 +36,7 @@ export const useUserStore = defineStore('user', {
     async fetchUserInfo() {
       const res = await getCurrentUser()
       this.userInfo = res.data
+      this.permissions = res.data.permissions || []
       return res.data
     },
 
