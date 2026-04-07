@@ -165,7 +165,8 @@ const handleCommand = (command) => {
 .sidebar {
   background-color: #304156;
   transition: width 0.3s;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 
   .el-menu {
     border-right: none;

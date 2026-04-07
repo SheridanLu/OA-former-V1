@@ -88,6 +88,37 @@ public class TodoService {
         todoMapper.insert(todo);
     }
 
+    /**
+     * 按业务类型+单据ID批量标记已处理（审批流转时调用）
+     */
+    public void markDoneByBiz(String bizType, Integer bizId) {
+        List<SysTodo> todos = todoMapper.selectList(
+                new LambdaQueryWrapper<SysTodo>()
+                        .eq(SysTodo::getBizType, bizType)
+                        .eq(SysTodo::getBizId, bizId)
+                        .eq(SysTodo::getStatus, 0));
+        for (SysTodo t : todos) {
+            t.setStatus(1);
+            todoMapper.updateById(t);
+        }
+    }
+
+    /**
+     * 按用户+业务类型+单据ID标记已处理
+     */
+    public void markDoneByUserAndBiz(Integer userId, String bizType, Integer bizId) {
+        List<SysTodo> todos = todoMapper.selectList(
+                new LambdaQueryWrapper<SysTodo>()
+                        .eq(SysTodo::getUserId, userId)
+                        .eq(SysTodo::getBizType, bizType)
+                        .eq(SysTodo::getBizId, bizId)
+                        .eq(SysTodo::getStatus, 0));
+        for (SysTodo t : todos) {
+            t.setStatus(1);
+            todoMapper.updateById(t);
+        }
+    }
+
     private TodoVO toVO(SysTodo entity) {
         TodoVO vo = new TodoVO();
         BeanUtils.copyProperties(entity, vo);

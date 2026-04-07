@@ -36,6 +36,34 @@ export function rejectInstance(instanceId, opinion) {
   return request.post(`/api/v1/approval/${instanceId}/reject`, { opinion })
 }
 
+export function withdrawInstance(instanceId) {
+  return request.post(`/api/v1/approval/${instanceId}/withdraw`)
+}
+
+export function transferInstance(instanceId, data) {
+  return request.post(`/api/v1/approval/${instanceId}/transfer`, data)
+}
+
+export function addCosigner(instanceId, data) {
+  return request.post(`/api/v1/approval/${instanceId}/cosign`, data)
+}
+
+export function approveCosign(cosignId, opinion) {
+  return request.post(`/api/v1/approval/cosign/${cosignId}/approve`, { opinion })
+}
+
+export function sendReadHandle(instanceId, data) {
+  return request.post(`/api/v1/approval/${instanceId}/read-handle`, data)
+}
+
+export function sendCc(instanceId, data) {
+  return request.post(`/api/v1/approval/${instanceId}/cc`, data)
+}
+
+export function markCcHandled(ccId) {
+  return request.post(`/api/v1/approval/cc/${ccId}/handle`)
+}
+
 // ====== 审批查询 ======
 
 export function getMyPending(params) {

@@ -35,6 +35,12 @@ public class BizApprovalInstance {
     /** 发起人ID */
     private Integer initiatorId;
 
+    /** 当前节点进入时间(用于超时计算) */
+    private LocalDateTime deadlineAt;
+
+    /** 超时提醒级别: 0未提醒/1已24h/2已48h/3已72h */
+    private Integer reminderLevel;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

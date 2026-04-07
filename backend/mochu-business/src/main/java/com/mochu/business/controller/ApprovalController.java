@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -85,6 +86,61 @@ public class ApprovalController {
     public R<Void> reject(@PathVariable Integer instanceId, @RequestBody Map<String, String> body) {
         Integer userId = SecurityUtils.getCurrentUserId();
         approvalService.reject(instanceId, userId, body.get("opinion"));
+        return R.ok();
+    }
+
+    @PostMapping("/{instanceId}/withdraw")
+    public R<Void> withdraw(@PathVariable Integer instanceId) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        approvalService.withdraw(instanceId, userId);
+        return R.ok();
+    }
+
+    @PostMapping("/{instanceId}/transfer")
+    public R<Void> transfer(@PathVariable Integer instanceId, @RequestBody Map<String, Object> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        Integer targetUserId = (Integer) body.get("target_user_id");
+        String opinion = (String) body.get("opinion");
+        approvalService.transfer(instanceId, userId, targetUserId, opinion);
+        return R.ok();
+    }
+
+    @PostMapping("/{instanceId}/cosign")
+    public R<Void> addCosigner(@PathVariable Integer instanceId, @RequestBody Map<String, Object> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        Integer cosignerId = (Integer) body.get("cosigner_id");
+        String opinion = (String) body.get("opinion");
+        approvalService.addCosigner(instanceId, userId, cosignerId, opinion);
+        return R.ok();
+    }
+
+    @PostMapping("/cosign/{cosignId}/approve")
+    public R<Void> approveCosign(@PathVariable Integer cosignId, @RequestBody Map<String, String> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        approvalService.approveCosign(cosignId, userId, body.get("opinion"));
+        return R.ok();
+    }
+
+    @PostMapping("/{instanceId}/read-handle")
+    public R<Void> sendReadHandle(@PathVariable Integer instanceId, @RequestBody Map<String, Integer> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        approvalService.sendReadHandle(instanceId, userId, body.get("target_user_id"));
+        return R.ok();
+    }
+
+    @SuppressWarnings("unchecked")
+    @PostMapping("/{instanceId}/cc")
+    public R<Void> sendCc(@PathVariable Integer instanceId, @RequestBody Map<String, Object> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        List<Integer> userIds = (List<Integer>) body.get("user_ids");
+        approvalService.sendCc(instanceId, userId, userIds);
+        return R.ok();
+    }
+
+    @PostMapping("/cc/{ccId}/handle")
+    public R<Void> markHandled(@PathVariable Integer ccId) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        approvalService.markHandled(ccId, userId);
         return R.ok();
     }
 
