@@ -220,6 +220,10 @@ public class UserService {
                 vo.setDeptName(dept.getName());
             }
         }
+        // 查询用户角色ID列表
+        List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
+                new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, user.getId()));
+        vo.setRoleIds(userRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList()));
         return vo;
     }
 }

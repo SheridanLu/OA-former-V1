@@ -66,7 +66,11 @@ public class DelegationService {
         entity.setDelegatorId(currentUserId);
         entity.setDelegateeId(dto.getDelegateeId());
         try {
-            entity.setPermissionCodes(objectMapper.writeValueAsString(dto.getPermissionCodes()));
+            if (dto.getPermissionCodes() == null || dto.getPermissionCodes().isEmpty()) {
+                entity.setPermissionCodes("[]");
+            } else {
+                entity.setPermissionCodes(objectMapper.writeValueAsString(dto.getPermissionCodes()));
+            }
         } catch (JsonProcessingException e) {
             entity.setPermissionCodes("[]");
         }

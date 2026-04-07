@@ -3,6 +3,7 @@ package com.mochu.system.vo;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 用户详情/列表 VO — 对照 V3.2 P.1（排除 password_hash, deleted）
@@ -50,4 +51,7 @@ public class UserVO {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    /** 用户当前角色ID列表 */
+    private List<Integer> roleIds;
 }

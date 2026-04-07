@@ -217,7 +217,7 @@ public class CompletionController {
     @PatchMapping("/exceptions/{id}/resolve")
     @PreAuthorize("hasAuthority('completion:edit')")
     public R<Void> resolveException(@PathVariable Integer id, @RequestBody Map<String, String> body) {
-        completionService.resolveException(id, body.get("resolveRemark"));
+        completionService.resolveException(id, body.get("resolve_remark"));
         return R.ok();
     }
 

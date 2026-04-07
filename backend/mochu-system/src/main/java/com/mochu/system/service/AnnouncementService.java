@@ -75,6 +75,7 @@ public class AnnouncementService {
         SysAnnouncement entity = new SysAnnouncement();
         BeanUtils.copyProperties(dto, entity);
         entity.setStatus("draft");
+        entity.setPublisherId(SecurityUtils.getCurrentUserId());
         if (entity.getIsTop() == null) {
             entity.setIsTop(0);
         }
