@@ -171,13 +171,21 @@ const handleCommand = (command) => {
 .sidebar {
   background-color: #304156;
   transition: width 0.3s;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 
   .el-menu {
     border-right: none;
+    // 非折叠时子菜单内联展开，不需要额外处理
   }
+}
+
+// 折叠模式下弹出菜单样式修正
+:deep(.el-menu--vertical.el-menu--collapse .el-sub-menu .el-menu--inline) {
+  display: none !important;
+}
+:deep(.el-menu--vertical:not(.el-menu--collapse) .el-sub-menu .el-menu--inline) {
+  display: block;
 }
 
 .menu-scroll {
@@ -192,6 +200,11 @@ const handleCommand = (command) => {
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
+  }
+
+  // 确保子菜单展开后可见且可滚动
+  .el-sub-menu .el-menu {
+    background-color: #1f2d3d !important;
   }
 }
 
