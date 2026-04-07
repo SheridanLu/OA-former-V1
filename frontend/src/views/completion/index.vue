@@ -6,11 +6,11 @@
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="finish_date" label="竣工日期" width="110" />
-            <el-table-column prop="acceptance_status" label="验收状态" width="100">
-              <template #default="{ row }"><el-tag size="small">{{ row.acceptance_status || row.status }}</el-tag></template>
+            <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="plan_finish_date" label="计划竣工日期" width="130" />
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>
-            <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
             <el-table-column prop="created_at" label="创建时间" width="170" />
           </el-table>
         </el-tab-pane>
@@ -19,9 +19,9 @@
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="team_name" label="班组名称" width="150" />
-            <el-table-column prop="settle_amount" label="结算金额" width="130" align="right">
-              <template #default="{ row }">{{ row.settle_amount ? Number(row.settle_amount).toLocaleString() : '-' }}</template>
+            <el-table-column prop="settlement_no" label="结算编号" width="140" />
+            <el-table-column prop="settlement_amount" label="结算金额" width="130" align="right">
+              <template #default="{ row }">{{ row.settlement_amount ? Number(row.settlement_amount).toLocaleString() : '-' }}</template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
@@ -35,7 +35,7 @@
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="case_name" label="案件名称" min-width="200" show-overflow-tooltip />
             <el-table-column prop="case_type" label="案件类型" width="120" />
-            <el-table-column prop="amount" label="涉案金额" width="130" align="right" />
+            <el-table-column prop="summary" label="案件摘要" min-width="200" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>

@@ -6,9 +6,9 @@
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="user_id" label="员工ID" width="90" />
-            <el-table-column prop="month" label="月份" width="100" />
+            <el-table-column prop="salary_month" label="月份" width="100" />
             <el-table-column prop="base_salary" label="基本工资" width="120" align="right" />
-            <el-table-column prop="actual_salary" label="实发工资" width="120" align="right" />
+            <el-table-column prop="net_salary" label="实发工资" width="120" align="right" />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>
@@ -45,7 +45,7 @@
         <el-tab-pane label="入职管理" name="entry">
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="real_name" label="姓名" width="100" />
+            <el-table-column prop="applicant_name" label="姓名" width="100" />
             <el-table-column prop="dept_id" label="部门ID" width="90" />
             <el-table-column prop="entry_date" label="入职日期" width="110" />
             <el-table-column prop="status" label="状态" width="90">

@@ -4,12 +4,11 @@
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <el-tab-pane label="入库管理" name="inbound">
           <el-table :data="inboundData" v-loading="loading" stripe border>
-            <el-table-column prop="order_no" label="入库单号" width="140" />
+            <el-table-column prop="inbound_no" label="入库单号" width="140" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="supplier_id" label="供应商ID" width="100" />
-            <el-table-column prop="total_amount" label="总金额" width="130" align="right">
-              <template #default="{ row }">{{ row.total_amount ? Number(row.total_amount).toLocaleString() : '-' }}</template>
-            </el-table-column>
+            <el-table-column prop="contract_id" label="合同ID" width="100" />
+            <el-table-column prop="warehouse" label="仓库" width="120" />
+            <el-table-column prop="inbound_date" label="入库日期" width="110" />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }">
                 <el-tag size="small">{{ row.status }}</el-tag>
@@ -24,12 +23,10 @@
 
         <el-tab-pane label="出库管理" name="outbound">
           <el-table :data="outboundData" v-loading="loading" stripe border>
-            <el-table-column prop="order_no" label="出库单号" width="140" />
+            <el-table-column prop="outbound_no" label="出库单号" width="140" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
             <el-table-column prop="outbound_type" label="出库类型" width="120" />
-            <el-table-column prop="total_amount" label="总金额" width="130" align="right">
-              <template #default="{ row }">{{ row.total_amount ? Number(row.total_amount).toLocaleString() : '-' }}</template>
-            </el-table-column>
+            <el-table-column prop="outbound_date" label="出库日期" width="110" />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>
@@ -39,12 +36,10 @@
 
         <el-tab-pane label="退货管理" name="return">
           <el-table :data="returnData" v-loading="loading" stripe border>
-            <el-table-column prop="order_no" label="退货单号" width="140" />
+            <el-table-column prop="return_no" label="退货单号" width="140" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="return_type" label="退货类型" width="120" />
-            <el-table-column prop="total_amount" label="总金额" width="130" align="right">
-              <template #default="{ row }">{{ row.total_amount ? Number(row.total_amount).toLocaleString() : '-' }}</template>
-            </el-table-column>
+            <el-table-column prop="dispose_method" label="处理方式" width="120" />
+            <el-table-column prop="return_date" label="退货日期" width="110" />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>
@@ -56,9 +51,9 @@
           <el-table :data="stockData" v-loading="loading" stripe border>
             <el-table-column prop="project_id" label="项目ID" width="90" />
             <el-table-column prop="material_id" label="材料ID" width="90" />
-            <el-table-column prop="current_qty" label="当前库存" width="120" align="right" />
-            <el-table-column prop="total_in_qty" label="累计入库" width="120" align="right" />
-            <el-table-column prop="total_out_qty" label="累计出库" width="120" align="right" />
+            <el-table-column prop="current_quantity" label="当前库存" width="120" align="right" />
+            <el-table-column prop="avg_price" label="均价" width="120" align="right" />
+            <el-table-column prop="total_amount" label="库存金额" width="120" align="right" />
             <el-table-column prop="updated_at" label="更新时间" width="170" />
           </el-table>
         </el-tab-pane>

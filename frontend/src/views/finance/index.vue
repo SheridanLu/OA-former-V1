@@ -6,9 +6,9 @@
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="statement_no" label="结算编号" width="140" />
             <el-table-column prop="contract_id" label="合同ID" width="90" />
-            <el-table-column prop="statement_type" label="类型" width="90" />
-            <el-table-column prop="amount" label="金额" width="130" align="right">
-              <template #default="{ row }">{{ row.amount ? Number(row.amount).toLocaleString() : '-' }}</template>
+            <el-table-column prop="period" label="期间" width="90" />
+            <el-table-column prop="current_output" label="本期产值" width="130" align="right">
+              <template #default="{ row }">{{ row.current_output ? Number(row.current_output).toLocaleString() : '-' }}</template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
@@ -26,8 +26,8 @@
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="payment_no" label="付款编号" width="140" />
             <el-table-column prop="contract_id" label="合同ID" width="90" />
-            <el-table-column prop="apply_amount" label="申请金额" width="130" align="right">
-              <template #default="{ row }">{{ row.apply_amount ? Number(row.apply_amount).toLocaleString() : '-' }}</template>
+            <el-table-column prop="amount" label="申请金额" width="130" align="right">
+              <template #default="{ row }">{{ row.amount ? Number(row.amount).toLocaleString() : '-' }}</template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
@@ -66,10 +66,10 @@
         <el-tab-pane label="成本台账" name="costLedger">
           <el-table :data="tableData" v-loading="loading" stripe border>
             <el-table-column prop="project_id" label="项目ID" width="90" />
-            <el-table-column prop="category" label="费用类别" width="120" />
-            <el-table-column prop="budget_amount" label="预算金额" width="130" align="right" />
-            <el-table-column prop="actual_amount" label="实际金额" width="130" align="right" />
-            <el-table-column prop="updated_at" label="更新时间" width="170" />
+            <el-table-column prop="cost_type" label="费用类型" width="120" />
+            <el-table-column prop="cost_subtype" label="费用子类" width="120" />
+            <el-table-column prop="amount" label="金额" width="130" align="right" />
+            <el-table-column prop="created_at" label="创建时间" width="170" />
           </el-table>
         </el-tab-pane>
       </el-tabs>

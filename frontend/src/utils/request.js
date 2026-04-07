@@ -13,6 +13,31 @@ function uuid() {
   })
 }
 
+/**
+ * camelCase → snake_case 转换
+ * 后端 Jackson 配置了 property-naming-strategy: SNAKE_CASE，
+ * 前端表单使用 camelCase，发送时需要转换
+ */
+function toSnakeCase(str) {
+  return str.replace(/([A-Z])/g, '_$1').toLowerCase()
+}
+
+function convertKeysToSnakeCase(obj) {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertKeysToSnakeCase(item))
+  }
+  const result = {}
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      result[toSnakeCase(key)] = convertKeysToSnakeCase(obj[key])
+    }
+  }
+  return result
+}
+
 const request = axios.create({
   baseURL: '',
   timeout: 15000
@@ -33,6 +58,10 @@ request.interceptors.request.use(
     const method = (config.method || '').toUpperCase()
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       config.headers['X-Idempotency-Key'] = uuid()
+    }
+    // 请求体 camelCase → snake_case 转换（适配后端 Jackson SNAKE_CASE 策略）
+    if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
+      config.data = convertKeysToSnakeCase(config.data)
     }
     return config
   },

@@ -54,11 +54,11 @@
           </div>
           <el-table :data="spotData" v-loading="spotLoading" stripe border>
             <el-table-column prop="purchase_no" label="采购编号" width="140" />
-            <el-table-column prop="material_name" label="材料名称" min-width="150" />
+            <el-table-column prop="item_name" label="物品名称" min-width="150" />
             <el-table-column prop="quantity" label="数量" width="100" align="right" />
             <el-table-column prop="unit_price" label="单价" width="110" align="right" />
-            <el-table-column prop="total_amount" label="总金额" width="130" align="right">
-              <template #default="{ row }">{{ Number(row.total_amount).toLocaleString() }}</template>
+            <el-table-column prop="amount" label="金额" width="130" align="right">
+              <template #default="{ row }">{{ Number(row.amount).toLocaleString() }}</template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }">

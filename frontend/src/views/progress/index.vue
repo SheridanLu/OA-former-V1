@@ -7,9 +7,9 @@
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
             <el-table-column prop="task_name" label="任务名称" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="plan_start" label="计划开始" width="110" />
-            <el-table-column prop="plan_end" label="计划结束" width="110" />
-            <el-table-column prop="progress" label="进度(%)" width="100" align="right" />
+            <el-table-column prop="plan_start_date" label="计划开始" width="110" />
+            <el-table-column prop="plan_end_date" label="计划结束" width="110" />
+            <el-table-column prop="progress_pct" label="进度(%)" width="100" align="right" />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>
@@ -21,8 +21,8 @@
             <el-table-column prop="change_no" label="变更编号" width="140" />
             <el-table-column prop="project_id" label="项目ID" width="90" />
             <el-table-column prop="change_type" label="变更类型" width="120" />
-            <el-table-column prop="change_reason" label="变更原因" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="amount_change" label="金额变动" width="130" align="right" />
+            <el-table-column prop="description" label="变更说明" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="total_amount" label="变更金额" width="130" align="right" />
             <el-table-column prop="status" label="状态" width="90">
               <template #default="{ row }"><el-tag size="small">{{ row.status }}</el-tag></template>
             </el-table-column>

@@ -22,6 +22,12 @@ public class BizPurchaseListItem {
 
     private Integer materialId;
 
+    private String materialName;
+
+    private String specModel;
+
+    private String unit;
+
     private BigDecimal quantity;
 
     private BigDecimal estimatedPrice;

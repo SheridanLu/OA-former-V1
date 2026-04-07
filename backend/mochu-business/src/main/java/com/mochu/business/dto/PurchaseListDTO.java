@@ -27,8 +27,13 @@ public class PurchaseListDTO {
 
         private Integer id;
 
-        @NotNull(message = "材料不能为空")
         private Integer materialId;
+
+        private String materialName;
+
+        private String specModel;
+
+        private String unit;
 
         @NotNull(message = "需求数量不能为空")
         private BigDecimal quantity;

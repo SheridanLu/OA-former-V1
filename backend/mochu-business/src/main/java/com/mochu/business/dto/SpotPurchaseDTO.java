@@ -14,18 +14,10 @@ public class SpotPurchaseDTO {
     @NotNull(message = "关联项目不能为空")
     private Integer projectId;
 
-    private Integer supplierId;
-
-    @NotNull(message = "材料不能为空")
-    private Integer materialId;
-
-    @NotBlank(message = "材料名称不能为空")
-    private String materialName;
+    @NotBlank(message = "采购物品名称不能为空")
+    private String itemName;
 
     private String specModel;
-
-    @NotBlank(message = "单位不能为空")
-    private String unit;
 
     @NotNull(message = "采购数量不能为空")
     private BigDecimal quantity;
@@ -33,7 +25,9 @@ public class SpotPurchaseDTO {
     @NotNull(message = "单价不能为空")
     private BigDecimal unitPrice;
 
-    private BigDecimal totalAmount;
+    private BigDecimal amount;
+
+    private String supplierName;
 
     private String remark;
 }

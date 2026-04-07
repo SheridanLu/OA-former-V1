@@ -164,8 +164,8 @@ public class PurchaseService {
         entity.setPurchaseNo(noGeneratorService.generate("SP"));
         entity.setStatus("draft");
 
-        if (dto.getTotalAmount() == null && dto.getQuantity() != null && dto.getUnitPrice() != null) {
-            entity.setTotalAmount(dto.getQuantity().multiply(dto.getUnitPrice()));
+        if (dto.getAmount() == null && dto.getQuantity() != null && dto.getUnitPrice() != null) {
+            entity.setAmount(dto.getQuantity().multiply(dto.getUnitPrice()));
         }
 
         spotPurchaseMapper.insert(entity);
@@ -176,8 +176,8 @@ public class PurchaseService {
         if (entity == null) throw new BusinessException("零星采购不存在");
         BeanUtils.copyProperties(dto, entity, "id");
 
-        if (dto.getTotalAmount() == null && dto.getQuantity() != null && dto.getUnitPrice() != null) {
-            entity.setTotalAmount(dto.getQuantity().multiply(dto.getUnitPrice()));
+        if (dto.getAmount() == null && dto.getQuantity() != null && dto.getUnitPrice() != null) {
+            entity.setAmount(dto.getQuantity().multiply(dto.getUnitPrice()));
         }
 
         spotPurchaseMapper.updateById(entity);

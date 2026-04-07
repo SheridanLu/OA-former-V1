@@ -19,21 +19,20 @@ public class BizSpotPurchase extends BaseEntity {
 
     private Integer projectId;
 
-    private Integer supplierId;
-
-    private Integer materialId;
-
-    private String materialName;
+    /** 采购物品名称 (DDL: item_name) */
+    private String itemName;
 
     private String specModel;
-
-    private String unit;
 
     private BigDecimal quantity;
 
     private BigDecimal unitPrice;
 
-    private BigDecimal totalAmount;
+    /** 金额 (DDL: amount) */
+    private BigDecimal amount;
+
+    /** 供应商名称 (DDL: supplier_name VARCHAR) */
+    private String supplierName;
 
     private String status;
 

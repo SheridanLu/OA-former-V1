@@ -45,6 +45,26 @@ public class ProgressService {
                         .orderByAsc(BizGanttTask::getId));
     }
 
+    /**
+     * 分页查询甘特图任务，projectId 可选
+     */
+    public PageResult<BizGanttTask> listGanttTasksPaged(Integer projectId, Integer page, Integer size) {
+        int p = (page == null || page < 1) ? Constants.DEFAULT_PAGE : page;
+        int s = (size == null || size < 1) ? Constants.DEFAULT_SIZE : size;
+
+        Page<BizGanttTask> pageParam = new Page<>(p, s);
+        LambdaQueryWrapper<BizGanttTask> wrapper = new LambdaQueryWrapper<>();
+
+        if (projectId != null) {
+            wrapper.eq(BizGanttTask::getProjectId, projectId);
+        }
+        wrapper.orderByAsc(BizGanttTask::getSortOrder)
+               .orderByAsc(BizGanttTask::getId);
+
+        ganttTaskMapper.selectPage(pageParam, wrapper);
+        return new PageResult<>(pageParam.getRecords(), pageParam.getTotal(), p, s);
+    }
+
     public BizGanttTask getGanttTaskById(Integer id) {
         return ganttTaskMapper.selectById(id);
     }
