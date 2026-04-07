@@ -6,6 +6,7 @@ import com.mochu.business.dto.ContractDTO;
 import com.mochu.business.entity.BizContract;
 import com.mochu.business.mapper.BizContractMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -61,7 +62,7 @@ public class ContractService {
 
     public void update(Integer id, ContractDTO dto) {
         BizContract entity = contractMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("合同不存在");
+        if (entity == null) throw new BusinessException("合同不存在");
         BeanUtils.copyProperties(dto, entity, "id");
         if (dto.getTaxAmount() == null && dto.getAmountWithTax() != null && dto.getAmountWithoutTax() != null) {
             entity.setTaxAmount(dto.getAmountWithTax().subtract(dto.getAmountWithoutTax()));
@@ -71,7 +72,7 @@ public class ContractService {
 
     public void updateStatus(Integer id, String status) {
         BizContract entity = contractMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("合同不存在");
+        if (entity == null) throw new BusinessException("合同不存在");
         entity.setStatus(status);
         contractMapper.updateById(entity);
     }

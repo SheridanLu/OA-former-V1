@@ -16,6 +16,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -58,8 +60,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtUtils.getUsername(token);
                 String permKey = Constants.REDIS_PERMISSIONS_PREFIX + userId;
                 @SuppressWarnings("unchecked")
-                Set<String> permissions = (Set<String>) redisTemplate.opsForValue().get(permKey);
-                if (permissions == null) {
+                Object permObj = redisTemplate.opsForValue().get(permKey);
+                Set<String> permissions;
+                if (permObj instanceof Set) {
+                    permissions = (Set<String>) permObj;
+                } else if (permObj instanceof Collection) {
+                    permissions = new HashSet<>((Collection<String>) permObj);
+                } else {
                     permissions = Set.of();
                 }
 

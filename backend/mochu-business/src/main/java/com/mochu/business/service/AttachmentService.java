@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mochu.business.entity.BizAttachment;
 import com.mochu.business.mapper.BizAttachmentMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +61,7 @@ public class AttachmentService {
     public String getDownloadUrl(Integer id) throws Exception {
         BizAttachment attachment = attachmentMapper.selectById(id);
         if (attachment == null) {
-            throw new RuntimeException("附件不存在");
+            throw new BusinessException("附件不存在");
         }
         return minioService.getPresignedUrl(attachment.getFilePath());
     }

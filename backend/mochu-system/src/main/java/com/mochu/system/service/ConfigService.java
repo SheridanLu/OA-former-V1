@@ -3,6 +3,7 @@ package com.mochu.system.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import com.mochu.system.dto.ConfigDTO;
 import com.mochu.system.dto.ConfigQueryDTO;
@@ -69,7 +70,7 @@ public class ConfigService {
     public void update(Integer id, ConfigDTO dto) {
         SysConfig config = configMapper.selectById(id);
         if (config == null) {
-            throw new RuntimeException("配置不存在");
+            throw new BusinessException("配置不存在");
         }
         config.setConfigKey(dto.getConfigKey());
         config.setConfigValue(dto.getConfigValue());

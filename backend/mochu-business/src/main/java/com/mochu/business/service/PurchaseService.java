@@ -11,6 +11,7 @@ import com.mochu.business.mapper.BizPurchaseListItemMapper;
 import com.mochu.business.mapper.BizPurchaseListMapper;
 import com.mochu.business.mapper.BizSpotPurchaseMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -82,7 +83,7 @@ public class PurchaseService {
     @Transactional
     public void updatePurchaseList(Integer id, PurchaseListDTO dto) {
         BizPurchaseList entity = purchaseListMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("采购清单不存在");
+        if (entity == null) throw new BusinessException("采购清单不存在");
 
         BeanUtils.copyProperties(dto, entity, "id", "items");
 
@@ -101,7 +102,7 @@ public class PurchaseService {
 
     public void updatePurchaseListStatus(Integer id, String status) {
         BizPurchaseList entity = purchaseListMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("采购清单不存在");
+        if (entity == null) throw new BusinessException("采购清单不存在");
         entity.setStatus(status);
         purchaseListMapper.updateById(entity);
     }
@@ -172,7 +173,7 @@ public class PurchaseService {
 
     public void updateSpotPurchase(Integer id, SpotPurchaseDTO dto) {
         BizSpotPurchase entity = spotPurchaseMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("零星采购不存在");
+        if (entity == null) throw new BusinessException("零星采购不存在");
         BeanUtils.copyProperties(dto, entity, "id");
 
         if (dto.getTotalAmount() == null && dto.getQuantity() != null && dto.getUnitPrice() != null) {
@@ -184,7 +185,7 @@ public class PurchaseService {
 
     public void updateSpotPurchaseStatus(Integer id, String status) {
         BizSpotPurchase entity = spotPurchaseMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("零星采购不存在");
+        if (entity == null) throw new BusinessException("零星采购不存在");
         entity.setStatus(status);
         spotPurchaseMapper.updateById(entity);
     }

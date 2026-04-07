@@ -8,6 +8,7 @@ import com.mochu.business.entity.BizProject;
 import com.mochu.business.mapper.BizProjectMapper;
 import com.mochu.business.vo.ProjectVO;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -68,7 +69,7 @@ public class ProjectService {
     public void update(Integer id, ProjectDTO dto) {
         BizProject entity = projectMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("项目不存在");
+            throw new BusinessException("项目不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         projectMapper.updateById(entity);
@@ -77,7 +78,7 @@ public class ProjectService {
     public void updateStatus(Integer id, String status) {
         BizProject entity = projectMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("项目不存在");
+            throw new BusinessException("项目不存在");
         }
         entity.setStatus(status);
         projectMapper.updateById(entity);

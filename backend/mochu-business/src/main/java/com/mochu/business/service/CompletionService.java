@@ -15,6 +15,7 @@ import com.mochu.business.mapper.BizCompletionFinishMapper;
 import com.mochu.business.mapper.BizExceptionTaskMapper;
 import com.mochu.business.mapper.BizLaborSettlementMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -67,7 +68,7 @@ public class CompletionService {
     public void updateFinish(Integer id, CompletionFinishDTO dto) {
         BizCompletionFinish entity = completionFinishMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("完工验收记录不存在");
+            throw new BusinessException("完工验收记录不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         completionFinishMapper.updateById(entity);
@@ -76,7 +77,7 @@ public class CompletionService {
     public void updateFinishStatus(Integer id, String status) {
         BizCompletionFinish entity = completionFinishMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("完工验收记录不存在");
+            throw new BusinessException("完工验收记录不存在");
         }
         entity.setStatus(status);
         completionFinishMapper.updateById(entity);
@@ -121,7 +122,7 @@ public class CompletionService {
     public void updateLabor(Integer id, LaborSettlementDTO dto) {
         BizLaborSettlement entity = laborSettlementMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("劳务结算记录不存在");
+            throw new BusinessException("劳务结算记录不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         laborSettlementMapper.updateById(entity);
@@ -130,7 +131,7 @@ public class CompletionService {
     public void updateLaborStatus(Integer id, String status) {
         BizLaborSettlement entity = laborSettlementMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("劳务结算记录不存在");
+            throw new BusinessException("劳务结算记录不存在");
         }
         entity.setStatus(status);
         laborSettlementMapper.updateById(entity);
@@ -175,7 +176,7 @@ public class CompletionService {
     public void updateCase(Integer id, CaseDTO dto) {
         BizCase entity = caseMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("案例记录不存在");
+            throw new BusinessException("案例记录不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         caseMapper.updateById(entity);
@@ -184,7 +185,7 @@ public class CompletionService {
     public void updateCaseStatus(Integer id, String status) {
         BizCase entity = caseMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("案例记录不存在");
+            throw new BusinessException("案例记录不存在");
         }
         entity.setStatus(status);
         caseMapper.updateById(entity);
@@ -228,7 +229,7 @@ public class CompletionService {
     public void updateException(Integer id, ExceptionTaskDTO dto) {
         BizExceptionTask entity = exceptionTaskMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("异常工单不存在");
+            throw new BusinessException("异常工单不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         exceptionTaskMapper.updateById(entity);
@@ -237,7 +238,7 @@ public class CompletionService {
     public void resolveException(Integer id, String resolveRemark) {
         BizExceptionTask entity = exceptionTaskMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("异常工单不存在");
+            throw new BusinessException("异常工单不存在");
         }
         entity.setStatus(2); // 2=已处理
         entity.setResolveRemark(resolveRemark);

@@ -11,6 +11,7 @@ import com.mochu.business.mapper.BizChangeDetailMapper;
 import com.mochu.business.mapper.BizChangeOrderMapper;
 import com.mochu.business.mapper.BizGanttTaskMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -61,7 +62,7 @@ public class ProgressService {
     public void updateGanttTask(Integer id, GanttTaskDTO dto) {
         BizGanttTask entity = ganttTaskMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("甘特图任务不存在");
+            throw new BusinessException("甘特图任务不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         ganttTaskMapper.updateById(entity);
@@ -70,7 +71,7 @@ public class ProgressService {
     public void updateGanttTaskStatus(Integer id, String status) {
         BizGanttTask entity = ganttTaskMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("甘特图任务不存在");
+            throw new BusinessException("甘特图任务不存在");
         }
         entity.setStatus(status);
         ganttTaskMapper.updateById(entity);
@@ -145,7 +146,7 @@ public class ProgressService {
     public void updateChangeOrder(Integer id, ChangeOrderDTO dto) {
         BizChangeOrder order = changeOrderMapper.selectById(id);
         if (order == null) {
-            throw new RuntimeException("变更单不存在");
+            throw new BusinessException("变更单不存在");
         }
         BeanUtils.copyProperties(dto, order, "id", "details");
         changeOrderMapper.updateById(order);
@@ -168,7 +169,7 @@ public class ProgressService {
     public void updateChangeOrderStatus(Integer id, String status) {
         BizChangeOrder order = changeOrderMapper.selectById(id);
         if (order == null) {
-            throw new RuntimeException("变更单不存在");
+            throw new BusinessException("变更单不存在");
         }
         order.setStatus(status);
         changeOrderMapper.updateById(order);

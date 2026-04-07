@@ -6,6 +6,7 @@ import com.mochu.business.dto.SupplierDTO;
 import com.mochu.business.entity.BizSupplier;
 import com.mochu.business.mapper.BizSupplierMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -51,7 +52,7 @@ public class SupplierService {
 
     public void update(Integer id, SupplierDTO dto) {
         BizSupplier entity = supplierMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("供应商不存在");
+        if (entity == null) throw new BusinessException("供应商不存在");
         BeanUtils.copyProperties(dto, entity, "id");
         supplierMapper.updateById(entity);
     }

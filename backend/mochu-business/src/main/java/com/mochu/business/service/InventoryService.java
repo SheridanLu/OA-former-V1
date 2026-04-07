@@ -14,6 +14,7 @@ import com.mochu.business.mapper.BizInventoryMapper;
 import com.mochu.business.mapper.BizOutboundOrderMapper;
 import com.mochu.business.mapper.BizReturnOrderMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -68,7 +69,7 @@ public class InventoryService {
     public void updateInbound(Integer id, InboundOrderDTO dto) {
         BizInboundOrder entity = inboundOrderMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("入库单不存在");
+            throw new BusinessException("入库单不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         inboundOrderMapper.updateById(entity);
@@ -77,7 +78,7 @@ public class InventoryService {
     public void updateInboundStatus(Integer id, String status) {
         BizInboundOrder entity = inboundOrderMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("入库单不存在");
+            throw new BusinessException("入库单不存在");
         }
         entity.setStatus(status);
         inboundOrderMapper.updateById(entity);
@@ -123,7 +124,7 @@ public class InventoryService {
     public void updateOutbound(Integer id, OutboundOrderDTO dto) {
         BizOutboundOrder entity = outboundOrderMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("出库单不存在");
+            throw new BusinessException("出库单不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         outboundOrderMapper.updateById(entity);
@@ -132,7 +133,7 @@ public class InventoryService {
     public void updateOutboundStatus(Integer id, String status) {
         BizOutboundOrder entity = outboundOrderMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("出库单不存在");
+            throw new BusinessException("出库单不存在");
         }
         entity.setStatus(status);
         outboundOrderMapper.updateById(entity);
@@ -178,7 +179,7 @@ public class InventoryService {
     public void updateReturn(Integer id, ReturnOrderDTO dto) {
         BizReturnOrder entity = returnOrderMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("退库单不存在");
+            throw new BusinessException("退库单不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         returnOrderMapper.updateById(entity);
@@ -187,7 +188,7 @@ public class InventoryService {
     public void updateReturnStatus(Integer id, String status) {
         BizReturnOrder entity = returnOrderMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("退库单不存在");
+            throw new BusinessException("退库单不存在");
         }
         entity.setStatus(status);
         returnOrderMapper.updateById(entity);

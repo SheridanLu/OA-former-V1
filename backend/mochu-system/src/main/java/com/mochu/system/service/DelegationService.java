@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import com.mochu.common.security.SecurityUtils;
 import com.mochu.system.dto.DelegationDTO;
@@ -79,7 +80,7 @@ public class DelegationService {
     public void revoke(Integer id) {
         SysDelegation entity = delegationMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("委托记录不存在");
+            throw new BusinessException("委托记录不存在");
         }
         entity.setStatus(0);
         delegationMapper.updateById(entity);

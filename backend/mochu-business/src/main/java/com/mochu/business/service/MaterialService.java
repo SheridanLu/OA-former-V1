@@ -6,6 +6,7 @@ import com.mochu.business.dto.MaterialDTO;
 import com.mochu.business.entity.BizMaterialBase;
 import com.mochu.business.mapper.BizMaterialBaseMapper;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -56,7 +57,7 @@ public class MaterialService {
 
     public void update(Integer id, MaterialDTO dto) {
         BizMaterialBase entity = materialMapper.selectById(id);
-        if (entity == null) throw new RuntimeException("材料不存在");
+        if (entity == null) throw new BusinessException("材料不存在");
         BeanUtils.copyProperties(dto, entity, "id", "materialCode");
         materialMapper.updateById(entity);
     }

@@ -9,6 +9,7 @@ import com.mochu.business.dto.StatementDTO;
 import com.mochu.business.entity.*;
 import com.mochu.business.mapper.*;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -69,7 +70,7 @@ public class FinanceService {
     public void updateStatement(Integer id, StatementDTO dto) {
         BizStatement entity = statementMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("对账单不存在");
+            throw new BusinessException("对账单不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         statementMapper.updateById(entity);
@@ -78,7 +79,7 @@ public class FinanceService {
     public void updateStatementStatus(Integer id, String status) {
         BizStatement entity = statementMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("对账单不存在");
+            throw new BusinessException("对账单不存在");
         }
         entity.setStatus(status);
         statementMapper.updateById(entity);
@@ -131,7 +132,7 @@ public class FinanceService {
     public void updatePayment(Integer id, PaymentApplyDTO dto) {
         BizPaymentApply entity = paymentApplyMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("付款申请不存在");
+            throw new BusinessException("付款申请不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         paymentApplyMapper.updateById(entity);
@@ -140,7 +141,7 @@ public class FinanceService {
     public void updatePaymentStatus(Integer id, String status) {
         BizPaymentApply entity = paymentApplyMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("付款申请不存在");
+            throw new BusinessException("付款申请不存在");
         }
         entity.setStatus(status);
         paymentApplyMapper.updateById(entity);
@@ -193,7 +194,7 @@ public class FinanceService {
     public void updateInvoice(Integer id, InvoiceDTO dto) {
         BizInvoice entity = invoiceMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("发票不存在");
+            throw new BusinessException("发票不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         invoiceMapper.updateById(entity);
@@ -202,7 +203,7 @@ public class FinanceService {
     public void updateInvoiceStatus(Integer id, String status) {
         BizInvoice entity = invoiceMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("发票不存在");
+            throw new BusinessException("发票不存在");
         }
         entity.setStatus(status);
         invoiceMapper.updateById(entity);
@@ -255,7 +256,7 @@ public class FinanceService {
     public void updateReimburse(Integer id, ReimburseDTO dto) {
         BizReimburse entity = reimburseMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("报销单不存在");
+            throw new BusinessException("报销单不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id");
         reimburseMapper.updateById(entity);
@@ -264,7 +265,7 @@ public class FinanceService {
     public void updateReimburseStatus(Integer id, String status) {
         BizReimburse entity = reimburseMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("报销单不存在");
+            throw new BusinessException("报销单不存在");
         }
         entity.setStatus(status);
         reimburseMapper.updateById(entity);

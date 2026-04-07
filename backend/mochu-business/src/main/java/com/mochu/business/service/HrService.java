@@ -6,6 +6,7 @@ import com.mochu.business.dto.*;
 import com.mochu.business.entity.*;
 import com.mochu.business.mapper.*;
 import com.mochu.common.constant.Constants;
+import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -63,7 +64,7 @@ public class HrService {
     public void updateSalary(Integer id, SalaryDTO dto) {
         BizSalary entity = salaryMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("薪资记录不存在");
+            throw new BusinessException("薪资记录不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id", "page", "size");
         salaryMapper.updateById(entity);
@@ -72,7 +73,7 @@ public class HrService {
     public void updateSalaryStatus(Integer id, String status) {
         BizSalary entity = salaryMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("薪资记录不存在");
+            throw new BusinessException("薪资记录不存在");
         }
         entity.setStatus(status);
         salaryMapper.updateById(entity);
@@ -120,7 +121,7 @@ public class HrService {
     public void updateContract(Integer id, HrContractDTO dto) {
         BizHrContract entity = contractMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("合同不存在");
+            throw new BusinessException("合同不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id", "page", "size");
         contractMapper.updateById(entity);
@@ -129,7 +130,7 @@ public class HrService {
     public void updateContractStatus(Integer id, String status) {
         BizHrContract entity = contractMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("合同不存在");
+            throw new BusinessException("合同不存在");
         }
         entity.setStatus(status);
         contractMapper.updateById(entity);
@@ -184,7 +185,7 @@ public class HrService {
     public void updateCertificate(Integer id, HrCertificateDTO dto) {
         BizHrCertificate entity = certificateMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("证书不存在");
+            throw new BusinessException("证书不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id", "page", "size");
         certificateMapper.updateById(entity);
@@ -193,7 +194,7 @@ public class HrService {
     public void updateCertificateStatus(Integer id, String status) {
         BizHrCertificate entity = certificateMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("证书不存在");
+            throw new BusinessException("证书不存在");
         }
         entity.setStatus(status);
         certificateMapper.updateById(entity);
@@ -242,7 +243,7 @@ public class HrService {
     public void updateEntry(Integer id, HrEntryDTO dto) {
         BizHrEntry entity = entryMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("入职申请不存在");
+            throw new BusinessException("入职申请不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id", "page", "size", "entryNo");
         entryMapper.updateById(entity);
@@ -251,7 +252,7 @@ public class HrService {
     public void updateEntryStatus(Integer id, String status) {
         BizHrEntry entity = entryMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("入职申请不存在");
+            throw new BusinessException("入职申请不存在");
         }
         entity.setStatus(status);
         entryMapper.updateById(entity);
@@ -304,7 +305,7 @@ public class HrService {
     public void updateResign(Integer id, HrResignDTO dto) {
         BizHrResign entity = resignMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("离职申请不存在");
+            throw new BusinessException("离职申请不存在");
         }
         BeanUtils.copyProperties(dto, entity, "id", "page", "size", "resignNo");
         resignMapper.updateById(entity);
@@ -313,7 +314,7 @@ public class HrService {
     public void updateResignStatus(Integer id, String status) {
         BizHrResign entity = resignMapper.selectById(id);
         if (entity == null) {
-            throw new RuntimeException("离职申请不存在");
+            throw new BusinessException("离职申请不存在");
         }
         entity.setStatus(status);
         resignMapper.updateById(entity);
