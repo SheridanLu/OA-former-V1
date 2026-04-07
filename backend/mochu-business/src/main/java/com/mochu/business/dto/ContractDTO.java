@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 @Data
 public class ContractDTO {
@@ -41,4 +42,7 @@ public class ContractDTO {
     private String partyB;
     private Integer parentContractId;
     private String remark;
+
+    /** 模板字段填写值: {fieldKey: fieldValue} */
+    private Map<String, String> fieldValues;
 }

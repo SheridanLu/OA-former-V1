@@ -18,6 +18,7 @@
         <el-form-item label="状态">
           <el-select v-model="queryForm.status" placeholder="全部" clearable style="width: 120px">
             <el-option label="草稿" value="draft" />
+            <el-option label="待审批" value="pending" />
             <el-option label="进行中" value="active" />
             <el-option label="已完工" value="completed" />
             <el-option label="已关闭" value="closed" />
@@ -63,8 +64,8 @@
         <el-table-column prop="created_at" label="创建时间" width="170" />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-dropdown @command="(cmd) => handleStatusChange(row, cmd)" style="margin-left: 8px">
+            <el-button type="primary" link size="small" @click="handleEdit(row)" :disabled="row.status === 'pending'">编辑</el-button>
+            <el-dropdown v-if="row.status === 'active' || row.status === 'completed'" @command="(cmd) => handleStatusChange(row, cmd)" style="margin-left: 8px">
               <el-button type="warning" link size="small">状态<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -74,7 +75,7 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="row.status !== 'pending'" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -119,7 +120,9 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="合同类型" prop="contractType">
-              <el-input v-model="form.contractType" placeholder="如：施工总承包" />
+              <el-select v-model="form.contractType" style="width: 100%" placeholder="请选择合同类型">
+                <el-option v-for="t in contractTypeOptions" :key="t.code" :label="t.label" :value="t.code" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -186,6 +189,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { getProjectList, createProject, updateProject, updateProjectStatus, deleteProject } from '@/api/project'
+import { getContractTypes } from '@/api/contractTpl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -195,9 +199,11 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref(null)
 const editId = ref(null)
+const contractTypeOptions = ref([])
 
 const statusMap = {
   draft: { text: '草稿', type: 'info' },
+  pending: { text: '待审批', type: 'warning' },
   active: { text: '进行中', type: 'primary' },
   completed: { text: '已完工', type: 'success' },
   closed: { text: '已关闭', type: 'danger' }
@@ -286,7 +292,7 @@ const handleEdit = (row) => {
 
 const resetForm = () => {
   Object.assign(form, {
-    projectName: '', projectAlias: '', projectType: 2, contractType: '',
+    projectName: '', projectAlias: '', projectType: 2, contractType: null,
     clientName: '', location: '', amountWithTax: null, amountWithoutTax: null,
     taxRate: null, planStartDate: null, planEndDate: null, warrantyDate: null, remark: ''
   })
@@ -302,7 +308,7 @@ const handleSubmit = async () => {
       ElMessage.success('更新成功')
     } else {
       await createProject(form)
-      ElMessage.success('创建成功')
+      ElMessage.success('已提交审批')
     }
     dialogVisible.value = false
     fetchData()
@@ -327,6 +333,7 @@ const handleDelete = async (row) => {
 
 onMounted(() => {
   fetchData()
+  getContractTypes().then(res => { contractTypeOptions.value = res.data || [] })
 })
 </script>
 

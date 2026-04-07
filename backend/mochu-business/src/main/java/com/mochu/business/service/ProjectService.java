@@ -13,6 +13,7 @@ import com.mochu.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class ProjectService {
 
     private final BizProjectMapper projectMapper;
     private final NoGeneratorService noGeneratorService;
+    private final ApprovalService approvalService;
 
     public PageResult<BizProject> list(ProjectQueryDTO query) {
         int page = (query.getPage() == null || query.getPage() < 1) ? Constants.DEFAULT_PAGE : query.getPage();
@@ -58,12 +60,14 @@ public class ProjectService {
         return projectMapper.selectById(id);
     }
 
-    public void create(ProjectDTO dto) {
+    @Transactional
+    public void create(ProjectDTO dto, Integer initiatorId) {
         BizProject entity = new BizProject();
         BeanUtils.copyProperties(dto, entity);
         entity.setProjectNo(noGeneratorService.generate("PJ"));
-        entity.setStatus("draft");
+        entity.setStatus("pending");
         projectMapper.insert(entity);
+        approvalService.submitForApproval("project", entity.getId(), initiatorId);
     }
 
     public void update(Integer id, ProjectDTO dto) {
@@ -79,6 +83,10 @@ public class ProjectService {
         BizProject entity = projectMapper.selectById(id);
         if (entity == null) {
             throw new BusinessException("项目不存在");
+        }
+        // 只有审批通过(active)的项目才允许手动变更状态
+        if (!"active".equals(entity.getStatus()) && !"completed".equals(entity.getStatus())) {
+            throw new BusinessException("项目尚未审批通过，无法变更状态");
         }
         entity.setStatus(status);
         projectMapper.updateById(entity);

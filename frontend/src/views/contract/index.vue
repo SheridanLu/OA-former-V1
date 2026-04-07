@@ -6,9 +6,8 @@
           <el-input v-model="queryForm.contractName" placeholder="请输入" clearable style="width: 160px" />
         </el-form-item>
         <el-form-item label="合同类型">
-          <el-select v-model="queryForm.contractType" placeholder="全部" clearable style="width: 120px">
-            <el-option label="收入合同" value="income" />
-            <el-option label="支出合同" value="expense" />
+          <el-select v-model="queryForm.contractType" placeholder="全部" clearable style="width: 160px">
+            <el-option v-for="t in contractTypes" :key="t.code" :label="t.label" :value="t.code" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -35,11 +34,9 @@
       <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
         <el-table-column prop="contract_no" label="合同编号" width="140" />
         <el-table-column prop="contract_name" label="合同名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="contract_type" label="类型" width="90">
+        <el-table-column prop="contract_type" label="类型" width="140">
           <template #default="{ row }">
-            <el-tag :type="row.contract_type === 'income' ? 'success' : 'warning'" size="small">
-              {{ row.contract_type === 'income' ? '收入' : '支出' }}
-            </el-tag>
+            <el-tag size="small">{{ typeLabel(row.contract_type) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="amount_with_tax" label="含税金额" width="130" align="right">
@@ -57,8 +54,10 @@
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(row)"
+              :disabled="row.status === 'pending' || row.status === 'approved'">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row)"
+              v-if="row.status !== 'pending' && row.status !== 'approved'">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -69,7 +68,8 @@
         @size-change="fetchData" @current-change="fetchData" />
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑合同' : '新建合同'" width="750px" @closed="resetForm">
+    <!-- 新建/编辑合同 -->
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑合同' : '新建合同'" width="900px" @closed="resetForm" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="合同名称" prop="contractName">
           <el-input v-model="form.contractName" />
@@ -77,9 +77,8 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="合同类型" prop="contractType">
-              <el-select v-model="form.contractType" style="width: 100%">
-                <el-option label="收入合同" value="income" />
-                <el-option label="支出合同" value="expense" />
+              <el-select v-model="form.contractType" style="width: 100%" @change="onTypeChange" :disabled="isEdit">
+                <el-option v-for="t in contractTypes" :key="t.code" :label="t.label" :value="t.code" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -134,10 +133,43 @@
           </el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
+
+        <!-- 模板字段填写区 -->
+        <el-divider v-if="tplFields.length > 0">模板字段填写</el-divider>
+        <div v-if="tplLoading" style="text-align: center; padding: 20px">
+          <el-icon class="is-loading"><Loading /></el-icon> 加载模板字段...
+        </div>
+        <div v-if="tplError" style="padding: 10px">
+          <el-alert :title="tplError" type="warning" show-icon :closable="false" />
+        </div>
+        <template v-for="field in tplFields" :key="field.field_key">
+          <el-form-item :label="field.field_name" :required="field.required === 1">
+            <!-- text -->
+            <el-input v-if="field.field_type === 'text'" v-model="form.fieldValues[field.field_key]"
+              :placeholder="field.placeholder || ''" :maxlength="field.max_length || undefined" />
+            <!-- number -->
+            <el-input-number v-else-if="field.field_type === 'number'" v-model="form.fieldValues[field.field_key]"
+              controls-position="right" style="width: 100%" />
+            <!-- date -->
+            <el-date-picker v-else-if="field.field_type === 'date'" v-model="form.fieldValues[field.field_key]"
+              type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            <!-- select -->
+            <el-select v-else-if="field.field_type === 'select'" v-model="form.fieldValues[field.field_key]" style="width: 100%">
+              <el-option v-for="opt in parseOptions(field.options_json)" :key="opt" :label="opt" :value="opt" />
+            </el-select>
+            <!-- textarea -->
+            <el-input v-else-if="field.field_type === 'textarea'" v-model="form.fieldValues[field.field_key]"
+              type="textarea" :rows="3" :placeholder="field.placeholder || ''" :maxlength="field.max_length || undefined" />
+            <!-- fallback text -->
+            <el-input v-else v-model="form.fieldValues[field.field_key]" :placeholder="field.placeholder || ''" />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">
+          {{ isEdit ? '保存' : '提交审批' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -146,8 +178,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import { getContractList, createContract, updateContract, deleteContract } from '@/api/contract'
 import { getAllProjects } from '@/api/project'
+import { getContractTypes, getActiveTplVersion, getVersionFields } from '@/api/contractTpl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -158,6 +192,11 @@ const isEdit = ref(false)
 const formRef = ref(null)
 const editId = ref(null)
 const projects = ref([])
+const contractTypes = ref([])
+
+const tplFields = ref([])
+const tplLoading = ref(false)
+const tplError = ref('')
 
 const statusMap = {
   draft: { text: '草稿', type: 'info' },
@@ -170,9 +209,10 @@ const statusMap = {
 const queryForm = reactive({ contractName: '', contractType: '', status: '', page: 1, size: 20 })
 
 const form = reactive({
-  contractName: '', contractType: 'expense', projectId: null, supplierId: null,
+  contractName: '', contractType: null, projectId: null, supplierId: null,
   amountWithTax: null, amountWithoutTax: null, taxRate: null,
-  signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: ''
+  signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: '',
+  fieldValues: {}
 })
 
 const rules = {
@@ -182,6 +222,16 @@ const rules = {
   amountWithTax: [{ required: true, message: '请输入含税金额', trigger: 'blur' }],
   amountWithoutTax: [{ required: true, message: '请输入不含税金额', trigger: 'blur' }],
   taxRate: [{ required: true, message: '请输入税率', trigger: 'blur' }]
+}
+
+const typeLabel = (code) => {
+  const t = contractTypes.value.find(i => i.code === code)
+  return t ? t.label : code
+}
+
+const parseOptions = (json) => {
+  if (!json) return []
+  try { return JSON.parse(json) } catch { return [] }
 }
 
 const fetchData = async () => {
@@ -194,15 +244,44 @@ const fetchData = async () => {
 }
 
 const loadProjects = async () => {
+  try { const res = await getAllProjects(); projects.value = res.data || [] } catch { /* ignore */ }
+}
+
+/**
+ * 合同类型变更时自动加载模板字段
+ */
+const onTypeChange = async (type) => {
+  tplFields.value = []
+  tplError.value = ''
+  form.fieldValues = {}
+  if (!type) return
+
+  tplLoading.value = true
   try {
-    const res = await getAllProjects()
-    projects.value = res.data || []
-  } catch { /* ignore */ }
+    const res = await getActiveTplVersion(type)
+    if (res.code === 200 && res.data) {
+      const fieldRes = await getVersionFields(res.data.id)
+      tplFields.value = fieldRes.data || []
+      // 用默认值初始化
+      for (const f of tplFields.value) {
+        form.fieldValues[f.field_key] = f.default_value || ''
+      }
+    } else {
+      tplError.value = '该合同类型尚未配置模板，请联系管理员'
+    }
+  } catch (e) {
+    tplError.value = e?.response?.data?.message || '该合同类型尚未配置模板，请联系管理员'
+  } finally { tplLoading.value = false }
 }
 
 const handleSearch = () => { queryForm.page = 1; fetchData() }
-const handleReset = () => { queryForm.contractName = ''; queryForm.contractType = ''; queryForm.status = ''; queryForm.page = 1; fetchData() }
-const handleAdd = () => { isEdit.value = false; editId.value = null; loadProjects(); dialogVisible.value = true }
+const handleReset = () => {
+  queryForm.contractName = ''; queryForm.contractType = ''; queryForm.status = ''; queryForm.page = 1; fetchData()
+}
+const handleAdd = () => {
+  isEdit.value = false; editId.value = null; tplFields.value = []; tplError.value = ''
+  loadProjects(); dialogVisible.value = true
+}
 
 const handleEdit = (row) => {
   isEdit.value = true; editId.value = row.id; loadProjects()
@@ -212,26 +291,47 @@ const handleEdit = (row) => {
     amountWithTax: row.amount_with_tax, amountWithoutTax: row.amount_without_tax,
     taxRate: row.tax_rate, signDate: row.sign_date || null, startDate: row.start_date || null,
     endDate: row.end_date || null, partyA: row.party_a || '', partyB: row.party_b || '',
-    remark: row.remark || ''
+    remark: row.remark || '', fieldValues: {}
   })
+  // 编辑时加载字段
+  if (row.contract_type) onTypeChange(row.contract_type)
   dialogVisible.value = true
 }
 
 const resetForm = () => {
   Object.assign(form, {
-    contractName: '', contractType: 'expense', projectId: null, supplierId: null,
+    contractName: '', contractType: null, projectId: null, supplierId: null,
     amountWithTax: null, amountWithoutTax: null, taxRate: null,
-    signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: ''
+    signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: '',
+    fieldValues: {}
   })
+  tplFields.value = []; tplError.value = ''
   formRef.value?.resetFields()
 }
 
 const handleSubmit = async () => {
   await formRef.value.validate()
+
+  // 校验模板必填字段
+  for (const f of tplFields.value) {
+    if (f.required === 1) {
+      const val = form.fieldValues[f.field_key]
+      if (!val && val !== 0) {
+        ElMessage.warning(`请填写模板字段: ${f.field_name}`)
+        return
+      }
+    }
+  }
+
   submitting.value = true
   try {
-    if (isEdit.value) { await updateContract(editId.value, form); ElMessage.success('更新成功') }
-    else { await createContract(form); ElMessage.success('创建成功') }
+    if (isEdit.value) {
+      await updateContract(editId.value, form)
+      ElMessage.success('更新成功')
+    } else {
+      await createContract(form)
+      ElMessage.success('已提交审批')
+    }
     dialogVisible.value = false; fetchData()
   } finally { submitting.value = false }
 }
@@ -241,7 +341,10 @@ const handleDelete = async (row) => {
   await deleteContract(row.id); ElMessage.success('删除成功'); fetchData()
 }
 
-onMounted(() => { fetchData() })
+onMounted(() => {
+  fetchData()
+  getContractTypes().then(res => { contractTypes.value = res.data || [] })
+})
 </script>
 
 <style scoped>.search-card { margin-bottom: 0; }</style>

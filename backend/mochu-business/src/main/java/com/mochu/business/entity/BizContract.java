@@ -24,6 +24,7 @@ public class BizContract extends BaseEntity {
     private Integer projectId;
     private Integer supplierId;
     private Integer templateId;
+    private Integer tplVersionId;
     private BigDecimal amountWithTax;
     private BigDecimal amountWithoutTax;
     private BigDecimal taxRate;

@@ -74,6 +74,12 @@ const routes = [
         meta: { title: '委托代理' }
       },
       {
+        path: 'system/contract-tpl',
+        name: 'ContractTplManage',
+        component: () => import('@/views/system/contract-tpl/index.vue'),
+        meta: { title: '合同模板' }
+      },
+      {
         path: 'projects',
         name: 'ProjectManage',
         component: () => import('@/views/project/index.vue'),

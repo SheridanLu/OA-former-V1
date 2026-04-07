@@ -6,6 +6,7 @@ import com.mochu.business.entity.BizProject;
 import com.mochu.business.service.ProjectService;
 import com.mochu.common.result.PageResult;
 import com.mochu.common.result.R;
+import com.mochu.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,7 +49,8 @@ public class ProjectController {
     @PostMapping
     @PreAuthorize("hasAuthority('project:edit')")
     public R<Void> create(@Valid @RequestBody ProjectDTO dto) {
-        projectService.create(dto);
+        Integer userId = SecurityUtils.getCurrentUserId();
+        projectService.create(dto, userId);
         return R.ok();
     }
 

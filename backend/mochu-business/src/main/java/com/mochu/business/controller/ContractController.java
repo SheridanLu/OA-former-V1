@@ -5,6 +5,7 @@ import com.mochu.business.entity.BizContract;
 import com.mochu.business.service.ContractService;
 import com.mochu.common.result.PageResult;
 import com.mochu.common.result.R;
+import com.mochu.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,16 +34,15 @@ public class ContractController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('contract:view')")
-    public R<BizContract> getById(@PathVariable Integer id) {
-        BizContract contract = contractService.getById(id);
-        if (contract == null) return R.fail(404, "合同不存在");
-        return R.ok(contract);
+    public R<Map<String, Object>> getById(@PathVariable Integer id) {
+        return R.ok(contractService.getDetail(id));
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('contract:edit')")
     public R<Void> create(@Valid @RequestBody ContractDTO dto) {
-        contractService.create(dto);
+        Integer userId = SecurityUtils.getCurrentUserId();
+        contractService.create(dto, userId);
         return R.ok();
     }
 
