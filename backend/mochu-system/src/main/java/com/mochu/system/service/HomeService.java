@@ -2,24 +2,30 @@ package com.mochu.system.service;
 
 import com.mochu.common.constant.Constants;
 import com.mochu.common.security.SecurityUtils;
+import com.mochu.system.vo.AnnouncementVO;
 import com.mochu.system.vo.HomeVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 首页服务 — 对照 V3.2 §4.2, §5.9.2
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HomeService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final AnnouncementService announcementService;
 
     /**
      * 获取首页数据
@@ -31,8 +37,24 @@ public class HomeService {
         // 待办数量（从 Redis 缓存读取，无缓存则返回 0）
         vo.setTodoCount(getTodoCount());
 
-        // 公告和快捷入口暂返回空列表（业务模块完成后补充）
-        vo.setAnnouncements(new ArrayList<>());
+        // 最新公告（已发布，最多5条）
+        try {
+            List<AnnouncementVO> published = announcementService.listPublished(5);
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            List<HomeVO.AnnouncementVO> annoList = published.stream().map(a -> {
+                HomeVO.AnnouncementVO avo = new HomeVO.AnnouncementVO();
+                avo.setId(a.getId());
+                avo.setTitle(a.getTitle());
+                avo.setPublishTime(a.getPublishTime() != null ? a.getPublishTime().format(fmt) : "");
+                return avo;
+            }).collect(Collectors.toList());
+            vo.setAnnouncements(annoList);
+        } catch (Exception e) {
+            log.warn("加载首页公告失败: {}", e.getMessage());
+            vo.setAnnouncements(new ArrayList<>());
+        }
+
+        // 快捷入口暂返回空列表
         vo.setShortcuts(new ArrayList<>());
 
         return vo;
