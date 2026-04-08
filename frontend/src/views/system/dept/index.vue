@@ -34,7 +34,7 @@
         </el-form-item>
         <el-form-item label="上级部门">
           <el-tree-select
-            v-model="form.parent_id"
+            v-model="form.parentId"
             :data="treeData"
             node-key="id"
             :props="{ label: 'name', children: 'children' }"
@@ -44,7 +44,7 @@
           />
         </el-form-item>
         <el-form-item label="负责人">
-          <el-input v-model="form.leader_id" placeholder="负责人ID" />
+          <el-input v-model="form.leaderId" placeholder="负责人ID" />
         </el-form-item>
         <el-form-item label="联系电话">
           <el-input v-model="form.phone" />
@@ -76,7 +76,7 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const formRef = ref(null)
 
-const form = reactive({ id: null, name: '', parent_id: 0, leader_id: null, phone: '', sort: 0, remark: '' })
+const form = reactive({ id: null, name: '', parentId: 0, leaderId: null, phone: '', sort: 0, remark: '' })
 
 const rules = {
   name: [{ required: true, message: '请输入部门名称', trigger: 'blur' }]
@@ -93,13 +93,13 @@ const fetchData = async () => {
 }
 
 const handleAdd = (parentId) => {
-  Object.assign(form, { id: null, name: '', parent_id: parentId, leader_id: null, phone: '', sort: 0, remark: '' })
+  Object.assign(form, { id: null, name: '', parentId: parentId, leaderId: null, phone: '', sort: 0, remark: '' })
   dialogTitle.value = '新增部门'
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  Object.assign(form, { id: row.id, name: row.name, parent_id: row.parent_id, leader_id: row.leader_id, phone: row.phone, sort: row.sort, remark: row.remark })
+  Object.assign(form, { id: row.id, name: row.name, parentId: row.parent_id, leaderId: row.leader_id, phone: row.phone, sort: row.sort, remark: row.remark })
   dialogTitle.value = '编辑部门'
   dialogVisible.value = true
 }

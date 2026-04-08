@@ -43,7 +43,10 @@ function convertKeysToSnakeCase(obj) {
 
 const request = axios.create({
   baseURL: '',
-  timeout: 15000
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json;charset=UTF-8'
+  }
 })
 
 // 请求拦截器 — 对照 V3.2 §3.2
@@ -65,6 +68,10 @@ request.interceptors.request.use(
     // 请求体 camelCase → snake_case 转换（适配后端 Jackson SNAKE_CASE 策略）
     if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
       config.data = convertKeysToSnakeCase(config.data)
+    }
+    // FormData 不设 Content-Type，由浏览器自动设置 multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
     }
     return config
   },
