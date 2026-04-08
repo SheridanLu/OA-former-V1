@@ -12,8 +12,8 @@ export function getMaterialById(id) {
   return request.get(`/api/v1/materials/${id}`)
 }
 
-export function createMaterial(data) {
-  return request.post('/api/v1/materials', data)
+export function batchCreateMaterial(data) {
+  return request.post('/api/v1/materials/batch', data)
 }
 
 export function updateMaterial(id, data) {

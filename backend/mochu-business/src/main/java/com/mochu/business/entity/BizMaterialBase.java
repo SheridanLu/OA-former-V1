@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
 /**
- * 材料基础信息表 — 对照 V3.2 P.24
+ * 材料基础信息表
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -25,7 +25,9 @@ public class BizMaterialBase extends BaseEntity {
 
     private String category;
 
-    private BigDecimal basePrice;
+    private BigDecimal basePriceWithTax;
+
+    private Integer taxRate;
 
     private String status;
 }

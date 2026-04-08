@@ -1,8 +1,10 @@
 package com.mochu.business.controller;
 
+import com.mochu.business.dto.MaterialBatchDTO;
 import com.mochu.business.dto.MaterialDTO;
 import com.mochu.business.entity.BizMaterialBase;
 import com.mochu.business.service.MaterialService;
+import com.mochu.business.vo.BatchResult;
 import com.mochu.common.result.PageResult;
 import com.mochu.common.result.R;
 import jakarta.validation.Valid;
@@ -43,11 +45,11 @@ public class MaterialController {
         return R.ok(material);
     }
 
-    @PostMapping
+    @PostMapping("/batch")
     @PreAuthorize("hasAuthority('material:edit')")
-    public R<Void> create(@Valid @RequestBody MaterialDTO dto) {
-        materialService.create(dto);
-        return R.ok();
+    public R<BatchResult> batchCreate(@Valid @RequestBody MaterialBatchDTO dto) {
+        BatchResult result = materialService.batchCreate(dto);
+        return R.ok(result);
     }
 
     @PutMapping("/{id}")

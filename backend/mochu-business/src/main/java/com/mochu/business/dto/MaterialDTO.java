@@ -1,6 +1,6 @@
 package com.mochu.business.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -11,16 +11,24 @@ public class MaterialDTO {
     private Integer id;
 
     @NotBlank(message = "材料名称不能为空")
+    @Size(min = 2, max = 100, message = "材料名称长度2~100字")
     private String materialName;
 
+    @Size(max = 200, message = "规格型号长度不超过200字")
     private String specModel;
+
+    @NotBlank(message = "分类不能为空")
+    private String category;
 
     @NotBlank(message = "计量单位不能为空")
     private String unit;
 
-    private String category;
+    @NotNull(message = "含税基准价不能为空")
+    @DecimalMin(value = "0", message = "含税基准价不能为负数")
+    private BigDecimal basePriceWithTax;
 
-    private BigDecimal basePrice;
+    @NotNull(message = "税率不能为空")
+    private Integer taxRate;
 
     private String status;
 }
