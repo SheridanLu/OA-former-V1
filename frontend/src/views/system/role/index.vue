@@ -55,14 +55,14 @@
     <!-- 新增/编辑 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="480px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="角色名称" prop="role_name">
-          <el-input v-model="form.role_name" />
+        <el-form-item label="角色名称" prop="roleName">
+          <el-input v-model="form.roleName" />
         </el-form-item>
-        <el-form-item label="角色编码" prop="role_code">
-          <el-input v-model="form.role_code" :disabled="!!form.id" />
+        <el-form-item label="角色编码" prop="roleCode">
+          <el-input v-model="form.roleCode" :disabled="!!form.id" />
         </el-form-item>
-        <el-form-item label="数据权限" prop="data_scope">
-          <el-select v-model="form.data_scope">
+        <el-form-item label="数据权限" prop="dataScope">
+          <el-select v-model="form.dataScope">
             <el-option v-for="(label, key) in dataScopeMap" :key="key" :label="label" :value="Number(key)" />
           </el-select>
         </el-form-item>
@@ -116,11 +116,11 @@ const formRef = ref(null)
 const permTreeRef = ref(null)
 
 const queryForm = reactive({ roleName: '', page: 1, size: 20 })
-const form = reactive({ id: null, role_name: '', role_code: '', data_scope: 4, remark: '' })
+const form = reactive({ id: null, roleName: '', roleCode: '', dataScope: 4, remark: '' })
 
 const rules = {
-  role_name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  role_code: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
+  roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
+  roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
 }
 
 const fetchData = async () => {
@@ -138,13 +138,13 @@ const handleSearch = () => { queryForm.page = 1; fetchData() }
 const handleReset = () => { Object.assign(queryForm, { roleName: '', page: 1, size: 20 }); fetchData() }
 
 const handleAdd = () => {
-  Object.assign(form, { id: null, role_name: '', role_code: '', data_scope: 4, remark: '' })
+  Object.assign(form, { id: null, roleName: '', roleCode: '', dataScope: 4, remark: '' })
   dialogTitle.value = '新增角色'
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  Object.assign(form, { id: row.id, role_name: row.role_name, role_code: row.role_code, data_scope: row.data_scope, remark: row.remark })
+  Object.assign(form, { id: row.id, roleName: row.role_name, roleCode: row.role_code, dataScope: row.data_scope, remark: row.remark })
   dialogTitle.value = '编辑角色'
   dialogVisible.value = true
 }

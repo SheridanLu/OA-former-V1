@@ -7,7 +7,7 @@
           <el-input v-model="queryForm.username" placeholder="请输入" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="姓名">
-          <el-input v-model="queryForm.real_name" placeholder="请输入" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="queryForm.realName" placeholder="请输入" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="queryForm.phone" placeholder="请输入" clearable @keyup.enter="handleSearch" />
@@ -74,8 +74,8 @@
         <el-form-item label="用户名" prop="username" v-if="!form.id">
           <el-input v-model="form.username" />
         </el-form-item>
-        <el-form-item label="姓名" prop="real_name">
-          <el-input v-model="form.real_name" />
+        <el-form-item label="姓名" prop="realName">
+          <el-input v-model="form.realName" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" />
@@ -83,9 +83,9 @@
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="form.email" />
         </el-form-item>
-        <el-form-item label="部门" prop="dept_id">
+        <el-form-item label="部门" prop="deptId">
           <el-tree-select
-            v-model="form.dept_id"
+            v-model="form.deptId"
             :data="deptTree"
             node-key="id"
             :props="{ label: 'name', children: 'children' }"
@@ -153,13 +153,13 @@ const positionOptions = [
   '劳务队长', '班组长'
 ]
 
-const queryForm = reactive({ username: '', real_name: '', phone: '', status: null, page: 1, size: 20 })
+const queryForm = reactive({ username: '', realName: '', phone: '', status: null, page: 1, size: 20 })
 
-const form = reactive({ id: null, username: '', real_name: '', phone: '', email: '', dept_id: null, position: '', password: '' })
+const form = reactive({ id: null, username: '', realName: '', phone: '', email: '', deptId: null, position: '', password: '' })
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  real_name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
@@ -177,18 +177,18 @@ const fetchData = async () => {
 
 const handleSearch = () => { queryForm.page = 1; fetchData() }
 const handleReset = () => {
-  Object.assign(queryForm, { username: '', real_name: '', phone: '', status: null, page: 1, size: 20 })
+  Object.assign(queryForm, { username: '', realName: '', phone: '', status: null, page: 1, size: 20 })
   fetchData()
 }
 
 const handleAdd = () => {
-  Object.assign(form, { id: null, username: '', real_name: '', phone: '', email: '', dept_id: null, position: '', password: '' })
+  Object.assign(form, { id: null, username: '', realName: '', phone: '', email: '', deptId: null, position: '', password: '' })
   dialogTitle.value = '新增用户'
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  Object.assign(form, { id: row.id, username: row.username, real_name: row.real_name, phone: row.phone, email: row.email, dept_id: row.dept_id, position: row.position, password: '' })
+  Object.assign(form, { id: row.id, username: row.username, realName: row.real_name, phone: row.phone, email: row.email, deptId: row.dept_id, position: row.position, password: '' })
   dialogTitle.value = '编辑用户'
   dialogVisible.value = true
 }
