@@ -18,6 +18,17 @@ export function createTpl(data) {
   return request.post('/api/v1/contract-tpl', data)
 }
 
+export function createTplWithFile(contractType, tplName, description, file) {
+  const formData = new FormData()
+  formData.append('contractType', contractType)
+  formData.append('tplName', tplName)
+  if (description) formData.append('description', description)
+  formData.append('file', file)
+  return request.post('/api/v1/contract-tpl/with-file', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
 export function updateTpl(id, data) {
   return request.put(`/api/v1/contract-tpl/${id}`, data)
 }
@@ -45,6 +56,10 @@ export function getTplVersion(versionId) {
 
 export function updateVersionStatus(versionId, status) {
   return request.patch(`/api/v1/contract-tpl/versions/${versionId}/status`, { status })
+}
+
+export function submitVersionApproval(versionId) {
+  return request.post(`/api/v1/contract-tpl/versions/${versionId}/submit-approval`)
 }
 
 export function previewVersion(versionId) {

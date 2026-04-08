@@ -38,6 +38,7 @@ public class ContractTplService {
     private final SysContractTplFieldMapper fieldMapper;
     private final SysContractTplAuditMapper auditMapper;
     private final MinioService minioService;
+    private final ApprovalService approvalService;
 
     /** 占位符正则: {{fieldKey}} 或 {{fieldKey:中文名}} */
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^}]+))?}}");
@@ -66,7 +67,7 @@ public class ContractTplService {
     }
 
     @Transactional
-    public void create(ContractTplDTO dto, Integer operatorId) {
+    public Integer create(ContractTplDTO dto, Integer operatorId) {
         if (!ContractTypeEnum.isValid(dto.getContractType())) {
             throw new BusinessException("无效的合同类型");
         }
@@ -86,6 +87,7 @@ public class ContractTplService {
         tplMapper.insert(entity);
 
         writeAudit(entity.getId(), null, "create", "创建模板: " + entity.getTplName(), operatorId);
+        return entity.getId();
     }
 
     @Transactional
@@ -268,6 +270,28 @@ public class ContractTplService {
 
         writeAudit(version.getTplId(), versionId, "update_fields",
                 "更新字段定义(" + dto.getFields().size() + "个字段)", operatorId);
+    }
+
+    // ===================== 审批集成 =====================
+
+    /**
+     * 提交版本启用审批（电子流审批）
+     * 有审批流时提交审批，无审批流时直接启用
+     */
+    @Transactional
+    public void submitVersionApproval(Integer versionId, Integer operatorId) {
+        SysContractTplVersion version = versionMapper.selectById(versionId);
+        if (version == null) throw new BusinessException("版本不存在");
+
+        boolean hasFlow = approvalService.hasFlowDef("contract_tpl");
+        if (hasFlow) {
+            approvalService.submitForApproval("contract_tpl", versionId, operatorId);
+            writeAudit(version.getTplId(), versionId, "submit_approval",
+                    "提交版本V" + version.getVersionNo() + "启用审批", operatorId);
+        } else {
+            // 无审批流，直接启用
+            updateVersionStatus(versionId, 1, operatorId);
+        }
     }
 
     // ===================== 审计日志 =====================

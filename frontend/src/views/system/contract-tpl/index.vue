@@ -45,7 +45,7 @@
     </el-card>
 
     <!-- 新建/编辑模板 -->
-    <el-dialog v-model="formVisible" :title="isEdit ? '编辑模板' : '新建模板'" width="500px" @closed="resetForm">
+    <el-dialog v-model="formVisible" :title="isEdit ? '编辑模板' : '新建模板'" width="560px" @closed="resetForm">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
         <el-form-item label="合同类型" prop="contractType">
           <el-select v-model="form.contractType" style="width: 100%" :disabled="isEdit">
@@ -57,6 +57,14 @@
         </el-form-item>
         <el-form-item label="说明">
           <el-input v-model="form.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="模板文件" v-if="!isEdit">
+          <el-upload ref="createUploadRef" drag :auto-upload="false" :limit="1" accept=".docx"
+            :on-change="(f) => createFile = f.raw" :on-remove="() => createFile = null">
+            <el-icon style="font-size: 40px; color: #909399"><Upload /></el-icon>
+            <div>将 .docx 模板文件拖到此处，或点击上传</div>
+            <template #tip><div class="el-upload__tip">仅支持 .docx 格式，文件中使用 {{字段名}} 标记可编辑字段</div></template>
+          </el-upload>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -91,10 +99,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="上传时间" width="170" />
-        <el-table-column label="操作" width="220">
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
             <el-button v-if="row.status !== 1" type="success" link size="small" @click="toggleVersion(row, 1)">启用</el-button>
             <el-button v-else type="warning" link size="small" @click="toggleVersion(row, 0)">停用</el-button>
+            <el-button v-if="row.status !== 1" type="primary" link size="small" @click="handleSubmitApproval(row)">提交审批</el-button>
             <el-button type="primary" link size="small" @click="handlePreview(row)">预览</el-button>
             <el-button type="info" link size="small" @click="handleViewFields(row)">字段</el-button>
           </template>
@@ -165,8 +174,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
-import { getContractTypes, getTplList, createTpl, updateTpl, deleteTpl,
-         uploadTplVersion, getTplVersions, updateVersionStatus,
+import { getContractTypes, getTplList, createTpl, createTplWithFile, updateTpl, deleteTpl,
+         uploadTplVersion, getTplVersions, updateVersionStatus, submitVersionApproval,
          previewVersion, getVersionFields, updateVersionFields, getTplAuditLogs } from '@/api/contractTpl'
 
 const loading = ref(false)
@@ -180,6 +189,8 @@ const formVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref(null)
 const editId = ref(null)
+const createUploadRef = ref(null)
+const createFile = ref(null)
 
 const uploadVisible = ref(false)
 const uploadRef = ref(null)
@@ -233,14 +244,22 @@ const handleEdit = (row) => {
   form.contractType = row.contract_type; form.tplName = row.tpl_name; form.description = row.description || ''
   formVisible.value = true
 }
-const resetForm = () => { Object.assign(form, { contractType: '', tplName: '', description: '' }); formRef.value?.resetFields() }
+const resetForm = () => { Object.assign(form, { contractType: '', tplName: '', description: '' }); formRef.value?.resetFields(); createFile.value = null; createUploadRef.value?.clearFiles() }
 
 const handleSubmitForm = async () => {
   await formRef.value.validate()
   submitting.value = true
   try {
-    if (isEdit.value) { await updateTpl(editId.value, form); ElMessage.success('更新成功') }
-    else { await createTpl(form); ElMessage.success('创建成功') }
+    if (isEdit.value) {
+      await updateTpl(editId.value, form)
+      ElMessage.success('更新成功')
+    } else if (createFile.value) {
+      await createTplWithFile(form.contractType, form.tplName, form.description, createFile.value)
+      ElMessage.success('创建成功，模板文件已上传')
+    } else {
+      await createTpl(form)
+      ElMessage.success('创建成功')
+    }
     formVisible.value = false; fetchData()
   } finally { submitting.value = false }
 }
@@ -273,6 +292,16 @@ const toggleVersion = async (row, status) => {
   ElMessage.success(status === 1 ? '已启用' : '已停用')
   const res = await getTplVersions(currentTplId.value)
   versions.value = res.data || []
+}
+
+const handleSubmitApproval = async (row) => {
+  await ElMessageBox.confirm(`确定提交版本V${row.version_no}的启用审批？`, '提交审批', { type: 'info' })
+  try {
+    await submitVersionApproval(row.id)
+    ElMessage.success('审批已提交')
+    const res = await getTplVersions(currentTplId.value)
+    versions.value = res.data || []
+  } catch (e) {}
 }
 
 const handlePreview = async (row) => {

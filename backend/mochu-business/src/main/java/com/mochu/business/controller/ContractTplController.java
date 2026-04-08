@@ -51,10 +51,30 @@ public class ContractTplController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('system:tpl-manage')")
-    public R<Void> create(@Valid @RequestBody ContractTplDTO dto) {
+    public R<Integer> create(@Valid @RequestBody ContractTplDTO dto) {
         Integer userId = SecurityUtils.getCurrentUserId();
-        tplService.create(dto, userId);
-        return R.ok();
+        Integer tplId = tplService.create(dto, userId);
+        return R.ok(tplId);
+    }
+
+    /**
+     * 创建模板并同时上传模板文件（合并操作）
+     */
+    @PostMapping("/with-file")
+    @PreAuthorize("hasAuthority('system:tpl-manage')")
+    public R<SysContractTplVersion> createWithFile(
+            @RequestParam String contractType,
+            @RequestParam String tplName,
+            @RequestParam(required = false) String description,
+            @RequestParam("file") MultipartFile file) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        ContractTplDTO dto = new ContractTplDTO();
+        dto.setContractType(contractType);
+        dto.setTplName(tplName);
+        dto.setDescription(description);
+        Integer tplId = tplService.create(dto, userId);
+        SysContractTplVersion version = tplService.uploadVersion(tplId, file, userId);
+        return R.ok(version);
     }
 
     @PutMapping("/{id}")
@@ -102,6 +122,17 @@ public class ContractTplController {
     public R<Void> updateVersionStatus(@PathVariable Integer versionId, @RequestBody Map<String, Integer> body) {
         Integer userId = SecurityUtils.getCurrentUserId();
         tplService.updateVersionStatus(versionId, body.get("status"), userId);
+        return R.ok();
+    }
+
+    /**
+     * 提交版本启用审批（电子流审批）
+     */
+    @PostMapping("/versions/{versionId}/submit-approval")
+    @PreAuthorize("hasAuthority('system:tpl-manage')")
+    public R<Void> submitVersionApproval(@PathVariable Integer versionId) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        tplService.submitVersionApproval(versionId, userId);
         return R.ok();
     }
 
