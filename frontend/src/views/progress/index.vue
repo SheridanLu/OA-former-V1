@@ -18,16 +18,44 @@
           <div style="margin-bottom: 12px">
             <el-button type="primary" @click="handleAddMilestone">新建里程碑</el-button>
           </div>
-          <el-table :data="milestoneData" v-loading="loading" stripe border>
-            <el-table-column prop="task_name" label="里程碑名称" min-width="200" show-overflow-tooltip />
-            <el-table-column label="关联项目" width="120">
+
+          <!-- 里程碑时间线可视化 -->
+          <div v-if="milestoneData.length > 0" class="milestone-timeline-wrapper">
+            <div class="milestone-timeline">
+              <svg :width="timelineSvgWidth" :height="timelineSvgHeight" class="milestone-dep-lines">
+                <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#409eff" /></marker></defs>
+                <line v-for="(line, idx) in depLines" :key="idx"
+                  :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2"
+                  stroke="#409eff" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowhead)" />
+              </svg>
+              <div v-for="(ms, idx) in milestoneData" :key="ms.id" class="milestone-node"
+                :style="{ left: milestoneNodePos(idx).x + 'px', top: milestoneNodePos(idx).y + 'px' }">
+                <div class="milestone-diamond" :class="'ms-' + (ms.status || 'draft')" :title="ms.task_name">
+                  <span class="milestone-icon">&#9670;</span>
+                </div>
+                <div class="milestone-label">{{ ms.task_name }}</div>
+                <div class="milestone-date">{{ ms.plan_end_date || '未设置' }}</div>
+                <el-tag :type="statusTagType[ms.status]" size="small" style="margin-top: 2px">{{ statusLabel[ms.status] || ms.status }}</el-tag>
+              </div>
+            </div>
+          </div>
+
+          <!-- 里程碑列表 -->
+          <el-table :data="milestoneData" v-loading="loading" stripe border style="margin-top: 12px">
+            <el-table-column prop="task_name" label="里程碑名称" min-width="180" show-overflow-tooltip />
+            <el-table-column label="关联项目" width="140">
               <template #default="{ row }">{{ projectNameMap[row.project_id] || row.project_id }}</template>
             </el-table-column>
-            <el-table-column prop="plan_start_date" label="计划开始" width="110" />
-            <el-table-column prop="plan_end_date" label="计划结束" width="110" />
-            <el-table-column prop="actual_start_date" label="实际开始" width="110" />
-            <el-table-column prop="actual_end_date" label="实际结束" width="110" />
-            <el-table-column prop="progress_pct" label="进度(%)" width="90" align="right" />
+            <el-table-column prop="plan_end_date" label="计划完成时间" width="130" />
+            <el-table-column prop="actual_end_date" label="实际完成时间" width="130" />
+            <el-table-column label="前置依赖" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">
+                <template v-if="row.dep_milestone_names && row.dep_milestone_names.length">
+                  <el-tag v-for="name in row.dep_milestone_names" :key="name" size="small" type="info" style="margin: 0 4px 2px 0">{{ name }}</el-tag>
+                </template>
+                <span v-else style="color: #999">-</span>
+              </template>
+            </el-table-column>
             <el-table-column label="状态" width="90">
               <template #default="{ row }">
                 <el-tag :type="statusTagType[row.status]" size="small">{{ statusLabel[row.status] || row.status }}</el-tag>
@@ -36,7 +64,7 @@
             <el-table-column label="操作" width="220">
               <template #default="{ row }">
                 <el-button type="primary" link size="small" @click="handleEditMilestone(row)">编辑</el-button>
-                <el-dropdown @command="(cmd) => handleStatusChange(row, cmd)" style="margin-left: 4px">
+                <el-dropdown @command="(cmd) => handleMilestoneStatusChange(row, cmd)" style="margin-left: 4px">
                   <el-button type="warning" link size="small">状态<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
@@ -46,7 +74,7 @@
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
-                <el-button type="danger" link size="small" @click="handleDeleteGantt(row)">删除</el-button>
+                <el-button type="danger" link size="small" @click="handleDeleteMilestone(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -192,7 +220,45 @@
       </el-tabs>
     </el-card>
 
-    <!-- ==================== 里程碑/甘特任务对话框 ==================== -->
+    <!-- ==================== 里程碑对话框 ==================== -->
+    <el-dialog v-model="msDialogVisible" :title="msDialogTitle" width="600px" @closed="resetMsForm">
+      <el-form ref="msFormRef" :model="msForm" :rules="msRules" label-width="110px">
+        <el-form-item label="关联项目" prop="projectId">
+          <el-select v-model="msForm.projectId" filterable placeholder="选择项目" style="width: 100%">
+            <el-option v-for="p in projects" :key="p.id" :label="p.project_name || p.projectName" :value="p.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="里程碑名称" prop="milestoneName">
+          <el-input v-model="msForm.milestoneName" placeholder="请输入里程碑名称" />
+        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="计划完成时间" prop="deadline">
+              <el-date-picker v-model="msForm.deadline" type="date" value-format="YYYY-MM-DD" style="width: 100%" placeholder="选择日期" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="实际完成时间">
+              <el-date-picker v-model="msForm.actualEndDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" placeholder="选择日期" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="前置依赖">
+          <el-select v-model="msForm.depMilestoneIds" multiple filterable clearable placeholder="选择前置里程碑" style="width: 100%">
+            <el-option v-for="m in availableDepMilestones" :key="m.id" :label="m.task_name" :value="m.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排序号">
+          <el-input-number v-model="msForm.sortOrder" :min="0" controls-position="right" style="width: 160px" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="msDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitMilestone">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ==================== 甘特任务对话框 ==================== -->
     <el-dialog v-model="ganttDialogVisible" :title="ganttDialogTitle" width="750px" @closed="resetGanttForm">
       <el-form ref="ganttFormRef" :model="ganttForm" :rules="ganttRules" label-width="110px">
         <el-row :gutter="16">
@@ -362,6 +428,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import {
+  getMilestoneList, getAllMilestones, createMilestone, updateMilestone, deleteMilestone,
   getGanttTaskList, createGanttTask, updateGanttTask, updateGanttTaskStatus, deleteGanttTask,
   getChangeOrderList, createChangeOrder, updateChangeOrder, updateChangeOrderStatus, deleteChangeOrder,
   getChangeOrderDetails
@@ -402,6 +469,29 @@ const milestoneNameMap = computed(() => {
 const milestoneData = ref([])
 const milestoneTotal = ref(0)
 const milestonePage = ref(1)
+
+// ====== 里程碑表单 ======
+const msDialogVisible = ref(false)
+const msDialogTitle = ref('新建里程碑')
+const msFormRef = ref(null)
+const isEditMs = ref(false)
+const editMsId = ref(null)
+
+const msForm = reactive({
+  projectId: null, milestoneName: '', deadline: null, actualEndDate: null,
+  sortOrder: 0, depMilestoneIds: []
+})
+
+const msRules = {
+  projectId: [{ required: true, message: '请选择关联项目', trigger: 'change' }],
+  milestoneName: [{ required: true, message: '请输入里程碑名称', trigger: 'blur' }],
+  deadline: [{ required: true, message: '请选择计划完成时间', trigger: 'change' }]
+}
+
+// 可选的依赖里程碑（排除自身）
+const availableDepMilestones = computed(() => {
+  return allMilestones.value.filter(m => m.id !== editMsId.value)
+})
 
 // ====== 甘特图数据 ======
 const ganttData = ref([])
@@ -449,6 +539,55 @@ const changeRules = {
   title: [{ required: true, message: '请输入变更标题', trigger: 'blur' }]
 }
 
+// ====== 里程碑时间线计算 ======
+const MS_NODE_W = 120
+const MS_NODE_H = 100
+const MS_GAP_X = 160
+const MS_GAP_Y = 120
+const MS_COLS = 5
+
+const milestoneNodePos = (idx) => {
+  const col = idx % MS_COLS
+  const row = Math.floor(idx / MS_COLS)
+  return { x: 40 + col * MS_GAP_X, y: 20 + row * MS_GAP_Y }
+}
+
+const timelineSvgWidth = computed(() => {
+  const count = milestoneData.value.length
+  const cols = Math.min(count, MS_COLS)
+  return Math.max(cols * MS_GAP_X + 80, 400)
+})
+
+const timelineSvgHeight = computed(() => {
+  const count = milestoneData.value.length
+  const rows = Math.ceil(count / MS_COLS)
+  return Math.max(rows * MS_GAP_Y + 40, 160)
+})
+
+const depLines = computed(() => {
+  const lines = []
+  const dataArr = milestoneData.value
+  const idxMap = {}
+  dataArr.forEach((ms, idx) => { idxMap[ms.id] = idx })
+
+  dataArr.forEach((ms, idx) => {
+    const deps = ms.dep_milestone_ids || []
+    deps.forEach(depId => {
+      const depIdx = idxMap[depId]
+      if (depIdx === undefined) return
+      const from = milestoneNodePos(depIdx)
+      const to = milestoneNodePos(idx)
+      lines.push({
+        x1: from.x + MS_NODE_W / 2,
+        y1: from.y + 30,
+        x2: to.x + MS_NODE_W / 2,
+        y2: to.y
+      })
+    })
+  })
+  return lines
+})
+
 // ====== 甘特图时间线计算 ======
 const ganttTimeRange = computed(() => {
   const allTasks = ganttData.value
@@ -484,17 +623,19 @@ const loadProjects = async () => {
 
 const loadAllMilestones = async () => {
   try {
-    const res = await getGanttTaskList({ taskType: 1, size: 500 })
-    allMilestones.value = res.data.records || []
+    const params = {}
+    if (filterProjectId.value) params.projectId = filterProjectId.value
+    const res = await getAllMilestones(params)
+    allMilestones.value = res.data || []
   } catch { /* ignore */ }
 }
 
 const fetchMilestones = async () => {
   loading.value = true
   try {
-    const params = { page: milestonePage.value, size: 20, taskType: 1 }
+    const params = { page: milestonePage.value, size: 20 }
     if (filterProjectId.value) params.projectId = filterProjectId.value
-    const res = await getGanttTaskList(params)
+    const res = await getMilestoneList(params)
     milestoneData.value = res.data.records || []
     milestoneTotal.value = res.data.total || 0
   } finally { loading.value = false }
@@ -548,19 +689,61 @@ const fetchCurrentTab = () => {
 
 // ====== 里程碑 CRUD ======
 const handleAddMilestone = () => {
-  isEditGantt.value = false; editGanttId.value = null
-  ganttForm.taskType = 1; ganttForm.parentId = null
-  ganttDialogTitle.value = '新建里程碑'
-  loadProjects()
-  ganttDialogVisible.value = true
+  isEditMs.value = false; editMsId.value = null
+  msDialogTitle.value = '新建里程碑'
+  if (filterProjectId.value) msForm.projectId = filterProjectId.value
+  loadProjects(); loadAllMilestones()
+  msDialogVisible.value = true
 }
 
 const handleEditMilestone = (row) => {
-  isEditGantt.value = true; editGanttId.value = row.id
-  ganttDialogTitle.value = '编辑里程碑'
-  populateGanttForm(row)
-  loadProjects()
-  ganttDialogVisible.value = true
+  isEditMs.value = true; editMsId.value = row.id
+  msDialogTitle.value = '编辑里程碑'
+  Object.assign(msForm, {
+    projectId: row.project_id,
+    milestoneName: row.task_name,
+    deadline: row.plan_end_date,
+    actualEndDate: row.actual_end_date || null,
+    sortOrder: row.sort_order || 0,
+    depMilestoneIds: row.dep_milestone_ids || []
+  })
+  loadProjects(); loadAllMilestones()
+  msDialogVisible.value = true
+}
+
+const resetMsForm = () => {
+  Object.assign(msForm, { projectId: null, milestoneName: '', deadline: null, actualEndDate: null, sortOrder: 0, depMilestoneIds: [] })
+  msFormRef.value?.resetFields()
+}
+
+const submitMilestone = async () => {
+  await msFormRef.value.validate()
+  submitting.value = true
+  try {
+    if (isEditMs.value) {
+      await updateMilestone(editMsId.value, msForm)
+      ElMessage.success('更新成功')
+    } else {
+      await createMilestone(msForm)
+      ElMessage.success('创建成功')
+    }
+    msDialogVisible.value = false
+    fetchMilestones(); loadAllMilestones()
+  } finally { submitting.value = false }
+}
+
+const handleMilestoneStatusChange = async (row, status) => {
+  await ElMessageBox.confirm(`确定将状态改为"${statusLabel[status]}"？`, '提示', { type: 'warning' })
+  await updateGanttTaskStatus(row.id, status)
+  ElMessage.success('状态已更新')
+  fetchMilestones()
+}
+
+const handleDeleteMilestone = async (row) => {
+  await ElMessageBox.confirm('确定删除该里程碑？', '提示', { type: 'warning' })
+  await deleteMilestone(row.id)
+  ElMessage.success('删除成功')
+  fetchMilestones(); loadAllMilestones()
 }
 
 // ====== 甘特任务 CRUD ======
@@ -706,6 +889,56 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.milestone-timeline-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  background: var(--el-fill-color-extra-light);
+  padding: 12px;
+}
+.milestone-timeline {
+  position: relative;
+  min-height: 160px;
+}
+.milestone-dep-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.milestone-node {
+  position: absolute;
+  width: 120px;
+  text-align: center;
+}
+.milestone-diamond {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+.milestone-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+.ms-draft .milestone-icon { color: #909399; }
+.ms-pending .milestone-icon { color: #e6a23c; }
+.ms-approved .milestone-icon { color: #67c23a; }
+.ms-locked .milestone-icon { color: #303133; }
+.milestone-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.milestone-date {
+  font-size: 11px;
+  color: #909399;
+  margin-top: 1px;
+}
 .gantt-chart-wrapper {
   overflow-x: auto;
   border: 1px solid var(--el-border-color-lighter);

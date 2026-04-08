@@ -1,5 +1,31 @@
 import request from '@/utils/request'
 
+// ====== 里程碑管理 ======
+
+export function getMilestoneList(params) {
+  return request.get('/api/v1/progress/milestones', { params })
+}
+
+export function getAllMilestones(params) {
+  return request.get('/api/v1/progress/milestones/all', { params })
+}
+
+export function createMilestone(data) {
+  return request.post('/api/v1/progress/milestones', data)
+}
+
+export function updateMilestone(id, data) {
+  return request.put(`/api/v1/progress/milestones/${id}`, data)
+}
+
+export function deleteMilestone(id) {
+  return request.delete(`/api/v1/progress/milestones/${id}`)
+}
+
+export function getMilestoneDeps(id) {
+  return request.get(`/api/v1/progress/milestones/${id}/deps`)
+}
+
 // ====== 甘特任务 / 里程碑 ======
 
 export function getGanttTaskList(params) {

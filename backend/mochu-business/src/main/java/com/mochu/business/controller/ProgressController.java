@@ -2,10 +2,12 @@ package com.mochu.business.controller;
 
 import com.mochu.business.dto.ChangeOrderDTO;
 import com.mochu.business.dto.GanttTaskDTO;
+import com.mochu.business.dto.MilestoneDTO;
 import com.mochu.business.entity.BizChangeDetail;
 import com.mochu.business.entity.BizChangeOrder;
 import com.mochu.business.entity.BizGanttTask;
 import com.mochu.business.service.ProgressService;
+import com.mochu.business.vo.MilestoneVO;
 import com.mochu.common.result.PageResult;
 import com.mochu.common.result.R;
 import jakarta.validation.Valid;
@@ -74,6 +76,51 @@ public class ProgressController {
     public R<Void> deleteGanttTask(@PathVariable Integer id) {
         progressService.deleteGanttTask(id);
         return R.ok();
+    }
+
+    // ===================== 里程碑 /milestones =====================
+
+    @GetMapping("/milestones")
+    @PreAuthorize("hasAuthority('progress:view')")
+    public R<PageResult<MilestoneVO>> listMilestones(
+            @RequestParam(required = false) Integer projectId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return R.ok(progressService.listMilestones(projectId, page, size));
+    }
+
+    @GetMapping("/milestones/all")
+    @PreAuthorize("hasAuthority('progress:view')")
+    public R<List<MilestoneVO>> listAllMilestones(
+            @RequestParam(required = false) Integer projectId) {
+        return R.ok(progressService.listAllMilestones(projectId));
+    }
+
+    @PostMapping("/milestones")
+    @PreAuthorize("hasAuthority('progress:edit')")
+    public R<Void> createMilestone(@Valid @RequestBody MilestoneDTO dto) {
+        progressService.createMilestone(dto);
+        return R.ok();
+    }
+
+    @PutMapping("/milestones/{id}")
+    @PreAuthorize("hasAuthority('progress:edit')")
+    public R<Void> updateMilestone(@PathVariable Integer id, @Valid @RequestBody MilestoneDTO dto) {
+        progressService.updateMilestone(id, dto);
+        return R.ok();
+    }
+
+    @DeleteMapping("/milestones/{id}")
+    @PreAuthorize("hasAuthority('progress:edit')")
+    public R<Void> deleteMilestone(@PathVariable Integer id) {
+        progressService.deleteMilestone(id);
+        return R.ok();
+    }
+
+    @GetMapping("/milestones/{id}/deps")
+    @PreAuthorize("hasAuthority('progress:view')")
+    public R<List<Integer>> getMilestoneDeps(@PathVariable Integer id) {
+        return R.ok(progressService.getMilestoneDeps(id));
     }
 
     // ===================== 变更单 /changes =====================
