@@ -58,7 +58,7 @@ public class ContractTplController {
     }
 
     /**
-     * 创建模板并同时上传模板文件（合并操作）
+     * 创建模板并同时上传模板文件（合并操作，支持 Word/Excel）
      */
     @PostMapping("/with-file")
     @PreAuthorize("hasAuthority('system:tpl-manage')")
@@ -93,7 +93,7 @@ public class ContractTplController {
         return R.ok();
     }
 
-    // ===================== 版本管理 =====================
+    // ===================== 版本管理(支持 .docx/.xlsx) =====================
 
     @PostMapping("/{id}/versions")
     @PreAuthorize("hasAuthority('system:tpl-manage')")

@@ -33,7 +33,7 @@ public class SysAnnouncement extends BaseEntity {
     /** 发布人ID */
     private Integer publisherId;
 
-    /** draft/published/offline/expired */
+    /** draft/pending_approval/approved/rejected/published/offline/expired */
     private String status;
 
     /** 是否置顶 */
@@ -41,4 +41,16 @@ public class SysAnnouncement extends BaseEntity {
 
     /** 可见范围,all或逗号分隔部门ID */
     private String scope;
+
+    /** 公告图片URL,JSON数组 */
+    private String images;
+
+    /** 审批人ID */
+    private Integer approverId;
+
+    /** 审批时间 */
+    private LocalDateTime approveTime;
+
+    /** 审批意见 */
+    private String approveRemark;
 }

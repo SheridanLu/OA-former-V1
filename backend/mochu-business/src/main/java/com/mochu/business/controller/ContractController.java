@@ -53,6 +53,67 @@ public class ContractController {
         return R.ok();
     }
 
+    /**
+     * 保存合同正文编辑 — PUT /api/v1/contracts/{id}/content
+     */
+    @PutMapping("/{id}/content")
+    @PreAuthorize("hasAuthority('contract:edit')")
+    public R<Void> saveContent(@PathVariable Integer id, @RequestBody Map<String, String> body) {
+        contractService.saveContent(id, body.get("content"));
+        return R.ok();
+    }
+
+    /**
+     * 提交审批 — PATCH /api/v1/contracts/{id}/submit-approval
+     */
+    @PatchMapping("/{id}/submit-approval")
+    @PreAuthorize("hasAuthority('contract:edit')")
+    public R<Void> submitApproval(@PathVariable Integer id) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        contractService.submitApproval(id, userId);
+        return R.ok();
+    }
+
+    /**
+     * 审批通过 — PATCH /api/v1/contracts/{id}/approve
+     */
+    @PatchMapping("/{id}/approve")
+    @PreAuthorize("hasAuthority('contract:edit')")
+    public R<Void> approve(@PathVariable Integer id, @RequestBody(required = false) Map<String, String> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        contractService.approve(id, body != null ? body.get("remark") : null, userId);
+        return R.ok();
+    }
+
+    /**
+     * 审批驳回 — PATCH /api/v1/contracts/{id}/reject
+     */
+    @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasAuthority('contract:edit')")
+    public R<Void> reject(@PathVariable Integer id, @RequestBody(required = false) Map<String, String> body) {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        contractService.reject(id, body != null ? body.get("remark") : null, userId);
+        return R.ok();
+    }
+
+    /**
+     * 预览合同正文 — GET /api/v1/contracts/{id}/preview
+     */
+    @GetMapping("/{id}/preview")
+    @PreAuthorize("hasAuthority('contract:view')")
+    public R<String> previewContent(@PathVariable Integer id) {
+        return R.ok(contractService.previewContent(id));
+    }
+
+    /**
+     * 生成可打印合同 — GET /api/v1/contracts/{id}/printable
+     */
+    @GetMapping("/{id}/printable")
+    @PreAuthorize("hasAuthority('contract:view')")
+    public R<String> printable(@PathVariable Integer id) {
+        return R.ok(contractService.generatePrintableContract(id));
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('contract:edit')")
     public R<Void> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> body) {

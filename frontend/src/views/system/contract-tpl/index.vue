@@ -59,11 +59,11 @@
           <el-input v-model="form.description" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="模板文件" v-if="!isEdit">
-          <el-upload ref="createUploadRef" drag :auto-upload="false" :limit="1" accept=".docx"
+          <el-upload ref="createUploadRef" drag :auto-upload="false" :limit="1" accept=".docx,.xlsx,.xls"
             :on-change="(f) => createFile = f.raw" :on-remove="() => createFile = null">
             <el-icon style="font-size: 40px; color: #909399"><Upload /></el-icon>
-            <div>将 .docx 模板文件拖到此处，或点击上传</div>
-            <template #tip><div class="el-upload__tip">仅支持 .docx 格式，文件中使用 {{字段名}} 标记可编辑字段</div></template>
+            <div>将 Word/Excel 模板文件拖到此处，或点击上传</div>
+            <template #tip><div class="el-upload__tip">支持 .docx / .xlsx 格式，文件中使用 {{字段名}} 标记可编辑字段</div></template>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -75,11 +75,11 @@
 
     <!-- 上传版本 -->
     <el-dialog v-model="uploadVisible" title="上传模板版本" width="500px">
-      <el-upload ref="uploadRef" drag :auto-upload="false" :limit="1" accept=".docx"
+      <el-upload ref="uploadRef" drag :auto-upload="false" :limit="1" accept=".docx,.xlsx,.xls"
         :on-change="(f) => uploadFile = f.raw">
         <el-icon style="font-size: 40px; color: #909399"><Upload /></el-icon>
-        <div>将 .docx 模板文件拖到此处，或点击上传</div>
-        <template #tip><div class="el-upload__tip">仅支持 .docx 格式，文件中使用 {{字段名}} 标记可编辑字段</div></template>
+        <div>将 Word/Excel 模板文件拖到此处，或点击上传</div>
+        <template #tip><div class="el-upload__tip">支持 .docx / .xlsx 格式，文件中使用 {{字段名}} 标记可编辑字段</div></template>
       </el-upload>
       <template #footer>
         <el-button @click="uploadVisible = false">取消</el-button>

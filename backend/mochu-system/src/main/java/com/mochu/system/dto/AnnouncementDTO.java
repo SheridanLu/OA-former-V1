@@ -29,5 +29,8 @@ public class AnnouncementDTO {
     /** 可见范围,all或逗号分隔部门ID */
     private String scope;
 
+    /** 公告图片URL,JSON数组 */
+    private String images;
+
     private String remark;
 }

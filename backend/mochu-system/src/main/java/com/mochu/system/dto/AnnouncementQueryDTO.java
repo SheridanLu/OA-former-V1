@@ -12,7 +12,7 @@ public class AnnouncementQueryDTO {
 
     private String type;
 
-    /** draft/published/offline/expired */
+    /** draft/pending_approval/approved/rejected/published/offline/expired */
     private String status;
 
     private Integer page;

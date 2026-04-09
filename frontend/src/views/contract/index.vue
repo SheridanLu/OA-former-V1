@@ -52,10 +52,19 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)"
               :disabled="row.status === 'pending' || row.status === 'approved'">编辑</el-button>
+            <el-button type="info" link size="small" @click="handlePreview(row)">预览</el-button>
+            <el-button type="warning" link size="small" @click="handleSubmitApproval(row)"
+              v-if="row.status === 'draft' || row.status === 'rejected'">提交审批</el-button>
+            <el-button type="success" link size="small" @click="handleApprove(row)"
+              v-if="row.status === 'pending'">通过</el-button>
+            <el-button type="danger" link size="small" @click="handleReject(row)"
+              v-if="row.status === 'pending'">驳回</el-button>
+            <el-button type="success" link size="small" @click="handlePrint(row)"
+              v-if="row.status === 'approved'">打印</el-button>
             <el-button type="danger" link size="small" @click="handleDelete(row)"
               v-if="row.status !== 'pending' && row.status !== 'approved'">删除</el-button>
           </template>
@@ -144,31 +153,63 @@
         </div>
         <template v-for="field in tplFields" :key="field.field_key">
           <el-form-item :label="field.field_name" :required="field.required === 1">
-            <!-- text -->
             <el-input v-if="field.field_type === 'text'" v-model="form.fieldValues[field.field_key]"
               :placeholder="field.placeholder || ''" :maxlength="field.max_length || undefined" />
-            <!-- number -->
             <el-input-number v-else-if="field.field_type === 'number'" v-model="form.fieldValues[field.field_key]"
               controls-position="right" style="width: 100%" />
-            <!-- date -->
             <el-date-picker v-else-if="field.field_type === 'date'" v-model="form.fieldValues[field.field_key]"
               type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-            <!-- select -->
             <el-select v-else-if="field.field_type === 'select'" v-model="form.fieldValues[field.field_key]" style="width: 100%">
               <el-option v-for="opt in parseOptions(field.options_json)" :key="opt" :label="opt" :value="opt" />
             </el-select>
-            <!-- textarea -->
             <el-input v-else-if="field.field_type === 'textarea'" v-model="form.fieldValues[field.field_key]"
               type="textarea" :rows="3" :placeholder="field.placeholder || ''" :maxlength="field.max_length || undefined" />
-            <!-- fallback text -->
             <el-input v-else v-model="form.fieldValues[field.field_key]" :placeholder="field.placeholder || ''" />
           </el-form-item>
         </template>
+
+        <!-- 合同正文编辑区(模板渲染后可编辑) -->
+        <el-divider v-if="tplHtml">合同正文编辑</el-divider>
+        <div v-if="tplHtml" class="contract-editor-wrap">
+          <div class="editor-toolbar">
+            <el-button size="small" @click="loadTplPreview">刷新预览</el-button>
+          </div>
+          <div ref="contentEditorRef" class="contract-editor" contenteditable="true"
+            @input="onContentInput" v-html="editableContent"></div>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">
-          {{ isEdit ? '保存' : '提交审批' }}
+          {{ isEdit ? '保存' : '保存草稿' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 合同预览弹窗 -->
+    <el-dialog v-model="previewVisible" title="合同预览" width="80%" top="3vh" destroy-on-close>
+      <div class="contract-preview" v-html="previewHtml"></div>
+    </el-dialog>
+
+    <!-- 打印弹窗 -->
+    <el-dialog v-model="printVisible" title="合同打印预览" width="90%" top="2vh" destroy-on-close>
+      <div class="print-actions" style="margin-bottom: 12px; text-align: right">
+        <el-button type="primary" @click="doPrint">打印合同</el-button>
+      </div>
+      <iframe ref="printFrame" :srcdoc="printHtml" style="width: 100%; height: 75vh; border: 1px solid #ebeef5"></iframe>
+    </el-dialog>
+
+    <!-- 审批意见弹窗 -->
+    <el-dialog v-model="approvalDialogVisible" :title="approvalDialogTitle" width="450px">
+      <el-form>
+        <el-form-item label="审批意见">
+          <el-input v-model="approvalRemark" type="textarea" :rows="3" placeholder="请输入审批意见（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="approvalDialogVisible = false">取消</el-button>
+        <el-button :type="approvalAction === 'approve' ? 'success' : 'danger'" @click="confirmApproval" :loading="approvalLoading">
+          {{ approvalAction === 'approve' ? '确认通过' : '确认驳回' }}
         </el-button>
       </template>
     </el-dialog>
@@ -179,9 +220,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
-import { getContractList, createContract, updateContract, deleteContract } from '@/api/contract'
+import {
+  getContractList, createContract, updateContract, deleteContract,
+  submitContractApproval, approveContract, rejectContract,
+  previewContractContent, getPrintableContract, saveContractContent
+} from '@/api/contract'
 import { getAllProjects } from '@/api/project'
-import { getContractTypes, getActiveTplVersion, getVersionFields } from '@/api/contractTpl'
+import { getContractTypes, getActiveTplVersion, getVersionFields, previewVersion } from '@/api/contractTpl'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -193,10 +238,31 @@ const formRef = ref(null)
 const editId = ref(null)
 const projects = ref([])
 const contractTypes = ref([])
+const contentEditorRef = ref(null)
 
 const tplFields = ref([])
 const tplLoading = ref(false)
 const tplError = ref('')
+const tplHtml = ref('')
+const editableContent = ref('')
+const activeTplVersionId = ref(null)
+
+// 预览
+const previewVisible = ref(false)
+const previewHtml = ref('')
+
+// 打印
+const printVisible = ref(false)
+const printHtml = ref('')
+const printFrame = ref(null)
+
+// 审批弹窗
+const approvalDialogVisible = ref(false)
+const approvalDialogTitle = ref('')
+const approvalAction = ref('')
+const approvalRemark = ref('')
+const approvalLoading = ref(false)
+const approvalTargetId = ref(null)
 
 const statusMap = {
   draft: { text: '草稿', type: 'info' },
@@ -212,7 +278,7 @@ const form = reactive({
   contractName: '', contractType: null, projectId: null, supplierId: null,
   amountWithTax: null, amountWithoutTax: null, taxRate: null,
   signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: '',
-  fieldValues: {}
+  fieldValues: {}, content: ''
 })
 
 const rules = {
@@ -247,39 +313,53 @@ const loadProjects = async () => {
   try { const res = await getAllProjects(); projects.value = res.data || [] } catch { /* ignore */ }
 }
 
-/**
- * 合同类型变更时自动加载模板字段
- */
 const onTypeChange = async (type) => {
-  tplFields.value = []
-  tplError.value = ''
-  form.fieldValues = {}
+  tplFields.value = []; tplError.value = ''; tplHtml.value = ''; editableContent.value = ''
+  form.fieldValues = {}; activeTplVersionId.value = null
   if (!type) return
 
   tplLoading.value = true
   try {
     const res = await getActiveTplVersion(type)
     if (res.code === 200 && res.data) {
+      activeTplVersionId.value = res.data.id
       const fieldRes = await getVersionFields(res.data.id)
       tplFields.value = fieldRes.data || []
-      // 用默认值初始化
       for (const f of tplFields.value) {
         form.fieldValues[f.field_key] = f.default_value || ''
       }
+      // 加载模板HTML用于编辑
+      const htmlRes = await previewVersion(res.data.id)
+      tplHtml.value = htmlRes.data || ''
+      editableContent.value = tplHtml.value
     } else {
       tplError.value = '该合同类型尚未配置模板，请联系管理员'
     }
   } catch (e) {
-    tplError.value = e?.response?.data?.message || '该合同类型尚未配置模板，请联系管理员'
+    tplError.value = e?.response?.data?.message || '该合同类型尚未配置模板'
   } finally { tplLoading.value = false }
+}
+
+const loadTplPreview = async () => {
+  if (!activeTplVersionId.value) return
+  const res = await previewVersion(activeTplVersionId.value)
+  editableContent.value = res.data || ''
+}
+
+const onContentInput = () => {
+  if (contentEditorRef.value) {
+    form.content = contentEditorRef.value.innerHTML
+  }
 }
 
 const handleSearch = () => { queryForm.page = 1; fetchData() }
 const handleReset = () => {
   queryForm.contractName = ''; queryForm.contractType = ''; queryForm.status = ''; queryForm.page = 1; fetchData()
 }
+
 const handleAdd = () => {
   isEdit.value = false; editId.value = null; tplFields.value = []; tplError.value = ''
+  tplHtml.value = ''; editableContent.value = ''; activeTplVersionId.value = null
   loadProjects(); dialogVisible.value = true
 }
 
@@ -291,9 +371,12 @@ const handleEdit = (row) => {
     amountWithTax: row.amount_with_tax, amountWithoutTax: row.amount_without_tax,
     taxRate: row.tax_rate, signDate: row.sign_date || null, startDate: row.start_date || null,
     endDate: row.end_date || null, partyA: row.party_a || '', partyB: row.party_b || '',
-    remark: row.remark || '', fieldValues: {}
+    remark: row.remark || '', fieldValues: {}, content: row.content || ''
   })
-  // 编辑时加载字段
+  if (row.content) {
+    editableContent.value = row.content
+    tplHtml.value = row.content
+  }
   if (row.contract_type) onTypeChange(row.contract_type)
   dialogVisible.value = true
 }
@@ -303,16 +386,15 @@ const resetForm = () => {
     contractName: '', contractType: null, projectId: null, supplierId: null,
     amountWithTax: null, amountWithoutTax: null, taxRate: null,
     signDate: null, startDate: null, endDate: null, partyA: '', partyB: '', remark: '',
-    fieldValues: {}
+    fieldValues: {}, content: ''
   })
-  tplFields.value = []; tplError.value = ''
+  tplFields.value = []; tplError.value = ''; tplHtml.value = ''; editableContent.value = ''
   formRef.value?.resetFields()
 }
 
 const handleSubmit = async () => {
   await formRef.value.validate()
 
-  // 校验模板必填字段
   for (const f of tplFields.value) {
     if (f.required === 1) {
       const val = form.fieldValues[f.field_key]
@@ -323,7 +405,6 @@ const handleSubmit = async () => {
     }
   }
 
-  // 将 fieldValues 中的值统一转为字符串（el-input-number 产出的是数字）
   const payload = { ...form }
   if (form.fieldValues && Object.keys(form.fieldValues).length > 0) {
     const strValues = {}
@@ -332,18 +413,97 @@ const handleSubmit = async () => {
     }
     payload.fieldValues = strValues
   }
+  // 获取编辑器中的内容
+  if (contentEditorRef.value) {
+    payload.content = contentEditorRef.value.innerHTML
+  }
 
   submitting.value = true
   try {
     if (isEdit.value) {
       await updateContract(editId.value, payload)
+      // 如果有编辑内容，也保存正文
+      if (payload.content) {
+        await saveContractContent(editId.value, payload.content)
+      }
       ElMessage.success('更新成功')
     } else {
       await createContract(payload)
-      ElMessage.success('已提交')
+      ElMessage.success('已保存为草稿')
     }
     dialogVisible.value = false; fetchData()
   } finally { submitting.value = false }
+}
+
+// 提交审批
+const handleSubmitApproval = (row) => {
+  ElMessageBox.confirm(`确定提交合同"${row.contract_name}"进行审批吗？`, '提交审批').then(async () => {
+    await submitContractApproval(row.id)
+    ElMessage.success('已提交审批')
+    fetchData()
+  }).catch(() => {})
+}
+
+// 审批通过
+const handleApprove = (row) => {
+  approvalTargetId.value = row.id
+  approvalAction.value = 'approve'
+  approvalDialogTitle.value = `审批通过 — ${row.contract_name}`
+  approvalRemark.value = ''
+  approvalDialogVisible.value = true
+}
+
+// 审批驳回
+const handleReject = (row) => {
+  approvalTargetId.value = row.id
+  approvalAction.value = 'reject'
+  approvalDialogTitle.value = `驳回 — ${row.contract_name}`
+  approvalRemark.value = ''
+  approvalDialogVisible.value = true
+}
+
+const confirmApproval = async () => {
+  approvalLoading.value = true
+  try {
+    const data = { remark: approvalRemark.value }
+    if (approvalAction.value === 'approve') {
+      await approveContract(approvalTargetId.value, data)
+      ElMessage.success('审批通过，合同已生成')
+    } else {
+      await rejectContract(approvalTargetId.value, data)
+      ElMessage.success('已驳回')
+    }
+    approvalDialogVisible.value = false
+    fetchData()
+  } finally { approvalLoading.value = false }
+}
+
+// 预览
+const handlePreview = async (row) => {
+  try {
+    const res = await previewContractContent(row.id)
+    previewHtml.value = res.data || '<p>暂无内容</p>'
+    previewVisible.value = true
+  } catch {
+    ElMessage.error('预览失败')
+  }
+}
+
+// 打印
+const handlePrint = async (row) => {
+  try {
+    const res = await getPrintableContract(row.id)
+    printHtml.value = res.data || ''
+    printVisible.value = true
+  } catch {
+    ElMessage.error('生成打印版失败')
+  }
+}
+
+const doPrint = () => {
+  if (printFrame.value) {
+    printFrame.value.contentWindow.print()
+  }
 }
 
 const handleDelete = async (row) => {
@@ -357,4 +517,52 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>.search-card { margin-bottom: 0; }</style>
+<style scoped lang="scss">
+.search-card { margin-bottom: 0; }
+
+.contract-editor-wrap {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #dcdfe6;
+}
+
+.contract-editor {
+  min-height: 300px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.8;
+  outline: none;
+
+  &:focus {
+    background: #fafafa;
+  }
+
+  :deep(img) {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.contract-preview {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 24px;
+  border: 1px solid #ebeef5;
+  background: #fff;
+  line-height: 1.8;
+  font-size: 14px;
+
+  :deep(.field-value) {
+    border-bottom: 1px solid #333;
+    padding: 0 4px;
+  }
+}
+</style>

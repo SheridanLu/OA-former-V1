@@ -34,6 +34,7 @@ public class ContractService {
     private final NoGeneratorService noGeneratorService;
     private final ContractTplService tplService;
     private final ApprovalService approvalService;
+    private final ContractGenerateService generateService;
 
     public PageResult<BizContract> list(String contractName, String contractType, String status,
                                          Integer projectId, Integer page, Integer size) {
@@ -222,6 +223,136 @@ public class ContractService {
             throw new BusinessException("审批中或已审批的合同不可删除");
         }
         contractMapper.deleteById(id);
+    }
+
+    /**
+     * 提交合同审批
+     */
+    @Transactional
+    public void submitApproval(Integer id, Integer userId) {
+        BizContract entity = contractMapper.selectById(id);
+        if (entity == null) throw new BusinessException("合同不存在");
+        if (!"draft".equals(entity.getStatus()) && !"rejected".equals(entity.getStatus())) {
+            throw new BusinessException("仅草稿或已驳回状态可提交审批");
+        }
+        entity.setStatus("pending");
+        entity.setApproverId(null);
+        entity.setApproveTime(null);
+        entity.setApproveRemark(null);
+        contractMapper.updateById(entity);
+
+        // 如有审批流，提交电子流审批
+        boolean hasFlow = approvalService.hasFlowDef("contract");
+        if (hasFlow) {
+            try {
+                Map<String, Object> bizContext = new HashMap<>();
+                bizContext.put("contract_type", entity.getContractType());
+                approvalService.submitForApproval("contract", entity.getId(), userId, bizContext);
+            } catch (Exception e) {
+                log.warn("合同审批流提交失败: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 审批通过 — 自动生成合同
+     */
+    @Transactional
+    public void approve(Integer id, String remark, Integer approverId) {
+        BizContract entity = contractMapper.selectById(id);
+        if (entity == null) throw new BusinessException("合同不存在");
+        if (!"pending".equals(entity.getStatus())) {
+            throw new BusinessException("仅待审批状态可审批");
+        }
+        entity.setStatus("approved");
+        entity.setApproverId(approverId);
+        entity.setApproveTime(LocalDateTime.now());
+        entity.setApproveRemark(remark);
+
+        // 渲染合同正文
+        if (entity.getTplVersionId() != null && (entity.getContent() == null || entity.getContent().isBlank())) {
+            List<BizContractFieldValue> values = fieldValueMapper.selectList(
+                    new LambdaQueryWrapper<BizContractFieldValue>()
+                            .eq(BizContractFieldValue::getContractId, id));
+            Map<String, String> fieldValues = values.stream()
+                    .collect(Collectors.toMap(BizContractFieldValue::getFieldKey, v -> v.getFieldValue() != null ? v.getFieldValue() : ""));
+            String contentHtml = generateService.renderTemplate(entity.getTplVersionId(), fieldValues);
+            entity.setContent(contentHtml);
+        }
+
+        contractMapper.updateById(entity);
+    }
+
+    /**
+     * 审批驳回
+     */
+    @Transactional
+    public void reject(Integer id, String remark, Integer approverId) {
+        BizContract entity = contractMapper.selectById(id);
+        if (entity == null) throw new BusinessException("合同不存在");
+        if (!"pending".equals(entity.getStatus())) {
+            throw new BusinessException("仅待审批状态可驳回");
+        }
+        entity.setStatus("rejected");
+        entity.setApproverId(approverId);
+        entity.setApproveTime(LocalDateTime.now());
+        entity.setApproveRemark(remark);
+        contractMapper.updateById(entity);
+    }
+
+    /**
+     * 预览合同正文（渲染模板+字段值）
+     */
+    public String previewContent(Integer id) {
+        BizContract entity = contractMapper.selectById(id);
+        if (entity == null) throw new BusinessException("合同不存在");
+
+        // 如果已生成正文直接返回
+        if (entity.getContent() != null && !entity.getContent().isBlank()) {
+            return entity.getContent();
+        }
+
+        // 否则实时渲染
+        if (entity.getTplVersionId() == null) {
+            return "<p>该合同未绑定模板</p>";
+        }
+        List<BizContractFieldValue> values = fieldValueMapper.selectList(
+                new LambdaQueryWrapper<BizContractFieldValue>()
+                        .eq(BizContractFieldValue::getContractId, id));
+        Map<String, String> fieldValues = values.stream()
+                .collect(Collectors.toMap(BizContractFieldValue::getFieldKey, v -> v.getFieldValue() != null ? v.getFieldValue() : ""));
+        return generateService.renderTemplate(entity.getTplVersionId(), fieldValues);
+    }
+
+    /**
+     * 生成可打印合同HTML（含水印 + A4排版）
+     */
+    public String generatePrintableContract(Integer id) {
+        BizContract entity = contractMapper.selectById(id);
+        if (entity == null) throw new BusinessException("合同不存在");
+        if (!"approved".equals(entity.getStatus())) {
+            throw new BusinessException("仅已审批通过的合同可生成打印版");
+        }
+
+        String contentHtml = entity.getContent();
+        if (contentHtml == null || contentHtml.isBlank()) {
+            contentHtml = previewContent(id);
+        }
+        return generateService.generatePrintableHtml(entity, contentHtml);
+    }
+
+    /**
+     * 保存合同正文编辑（基于模板编辑后的HTML）
+     */
+    @Transactional
+    public void saveContent(Integer id, String content) {
+        BizContract entity = contractMapper.selectById(id);
+        if (entity == null) throw new BusinessException("合同不存在");
+        if (!"draft".equals(entity.getStatus()) && !"rejected".equals(entity.getStatus())) {
+            throw new BusinessException("仅草稿或已驳回状态可编辑");
+        }
+        entity.setContent(content);
+        contractMapper.updateById(entity);
     }
 
     // ===================== 字段值校验 =====================

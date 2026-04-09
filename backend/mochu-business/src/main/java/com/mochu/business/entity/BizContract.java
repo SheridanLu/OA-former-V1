@@ -42,6 +42,21 @@ public class BizContract extends BaseEntity {
     private Integer terminatorId;
     private String remark;
 
+    /** 合同正文HTML(模板渲染+业务编辑后) */
+    private String content;
+
+    /** 生成的带水印合同文件路径 */
+    private String generatedFilePath;
+
+    /** 审批人ID */
+    private Integer approverId;
+
+    /** 审批时间 */
+    private LocalDateTime approveTime;
+
+    /** 审批意见 */
+    private String approveRemark;
+
     @Version
     private Integer version;
 }
