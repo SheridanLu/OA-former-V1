@@ -21,6 +21,8 @@ public class BizMaterialBase extends BaseEntity {
 
     private String specModel;
 
+    private String brand;
+
     private String unit;
 
     private String category;

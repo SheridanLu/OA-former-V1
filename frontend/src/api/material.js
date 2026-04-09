@@ -23,3 +23,7 @@ export function updateMaterial(id, data) {
 export function deleteMaterial(id) {
   return request.delete(`/api/v1/materials/${id}`)
 }
+
+export function submitMaterialApproval(id) {
+  return request.post(`/api/v1/materials/${id}/submit-approval`)
+}

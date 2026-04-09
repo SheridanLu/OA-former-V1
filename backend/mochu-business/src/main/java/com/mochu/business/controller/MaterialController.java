@@ -3,10 +3,12 @@ package com.mochu.business.controller;
 import com.mochu.business.dto.MaterialBatchDTO;
 import com.mochu.business.dto.MaterialDTO;
 import com.mochu.business.entity.BizMaterialBase;
+import com.mochu.business.service.ApprovalService;
 import com.mochu.business.service.MaterialService;
 import com.mochu.business.vo.BatchResult;
 import com.mochu.common.result.PageResult;
 import com.mochu.common.result.R;
+import com.mochu.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +22,7 @@ import java.util.List;
 public class MaterialController {
 
     private final MaterialService materialService;
+    private final ApprovalService approvalService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('material:view')")
@@ -63,6 +66,20 @@ public class MaterialController {
     @PreAuthorize("hasAuthority('material:edit')")
     public R<Void> delete(@PathVariable Integer id) {
         materialService.delete(id);
+        return R.ok();
+    }
+
+    @PostMapping("/{id}/submit-approval")
+    @PreAuthorize("hasAuthority('material:edit')")
+    public R<Void> submitApproval(@PathVariable Integer id) {
+        BizMaterialBase material = materialService.getById(id);
+        if (material == null) return R.fail(404, "材料不存在");
+        Integer userId = SecurityUtils.getCurrentUserId();
+        if (approvalService.hasFlowDef("material")) {
+            approvalService.submitForApproval("material", id, userId);
+        } else {
+            return R.fail(400, "未配置材料审批流程");
+        }
         return R.ok();
     }
 }

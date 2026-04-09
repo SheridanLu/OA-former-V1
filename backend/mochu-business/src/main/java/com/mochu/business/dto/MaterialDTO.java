@@ -17,6 +17,9 @@ public class MaterialDTO {
     @Size(max = 200, message = "规格型号长度不超过200字")
     private String specModel;
 
+    @Size(max = 100, message = "品牌长度不超过100字")
+    private String brand;
+
     @NotBlank(message = "分类不能为空")
     private String category;
 

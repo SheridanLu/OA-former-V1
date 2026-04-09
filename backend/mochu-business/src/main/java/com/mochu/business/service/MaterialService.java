@@ -156,6 +156,7 @@ public class MaterialService {
             BizMaterialBase entity = new BizMaterialBase();
             entity.setMaterialName(item.getMaterialName());
             entity.setSpecModel(item.getSpecModel());
+            entity.setBrand(item.getBrand());
             entity.setCategory(item.getCategory());
             entity.setUnit(item.getUnit());
             entity.setBasePriceWithTax(item.getBasePriceWithTax());
@@ -215,6 +216,7 @@ public class MaterialService {
                 new LambdaQueryWrapper<BizMaterialBase>()
                         .select(BizMaterialBase::getId, BizMaterialBase::getMaterialCode,
                                 BizMaterialBase::getMaterialName, BizMaterialBase::getUnit,
+                                BizMaterialBase::getBrand,
                                 BizMaterialBase::getBasePriceWithTax, BizMaterialBase::getTaxRate)
                         .eq(BizMaterialBase::getStatus, "active")
                         .orderByAsc(BizMaterialBase::getMaterialCode));

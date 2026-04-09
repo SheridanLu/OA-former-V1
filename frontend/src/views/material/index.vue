@@ -28,6 +28,7 @@
         <el-table-column prop="material_code" label="编码" width="140" />
         <el-table-column prop="material_name" label="名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="spec_model" label="规格型号" width="150" show-overflow-tooltip />
+        <el-table-column prop="brand" label="品牌" width="120" show-overflow-tooltip />
         <el-table-column prop="category" label="分类" width="80" />
         <el-table-column prop="unit" label="单位" width="70" />
         <el-table-column prop="base_price_with_tax" label="含税基准价" width="120" align="right">
@@ -43,9 +44,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="success" link size="small" @click="handleSubmitApproval(row)">提交审批</el-button>
             <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -72,6 +74,11 @@
           <el-table-column label="规格型号" width="140">
             <template #default="{ row }">
               <el-input v-model="row.specModel" placeholder="选填" :maxlength="200" />
+            </template>
+          </el-table-column>
+          <el-table-column label="品牌" width="120">
+            <template #default="{ row }">
+              <el-input v-model="row.brand" placeholder="选填" :maxlength="100" />
             </template>
           </el-table-column>
           <el-table-column label="分类 *" width="110">
@@ -152,6 +159,13 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="品牌">
+              <el-input v-model="editForm.brand" :maxlength="100" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
             <el-form-item label="分类" prop="category">
               <el-select v-model="editForm.category" style="width: 100%">
                 <el-option v-for="c in CATEGORIES" :key="c" :label="c" :value="c" />
@@ -203,7 +217,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
-import { getMaterialList, batchCreateMaterial, updateMaterial, deleteMaterial } from '@/api/material'
+import { getMaterialList, batchCreateMaterial, updateMaterial, deleteMaterial, submitMaterialApproval } from '@/api/material'
 
 // ===== 枚举常量（前端硬编码，与后端一致）=====
 const CATEGORIES = ['设备', '材料', '人工']
@@ -239,6 +253,7 @@ const batchRows = ref([])
 const createEmptyRow = () => ({
   materialName: '',
   specModel: '',
+  brand: '',
   category: '材料',
   unit: '项',
   basePriceWithTax: null,
@@ -382,7 +397,7 @@ const editFormRef = ref(null)
 const editId = ref(null)
 
 const editForm = reactive({
-  materialName: '', specModel: '', category: '材料', unit: '项',
+  materialName: '', specModel: '', brand: '', category: '材料', unit: '项',
   basePriceWithTax: null, taxRate: 13, status: 'active'
 })
 
@@ -400,6 +415,7 @@ const handleEdit = (row) => {
   Object.assign(editForm, {
     materialName: row.material_name,
     specModel: row.spec_model || '',
+    brand: row.brand || '',
     category: row.category || '材料',
     unit: row.unit || '项',
     basePriceWithTax: row.base_price_with_tax,
@@ -411,7 +427,7 @@ const handleEdit = (row) => {
 
 const resetEditForm = () => {
   Object.assign(editForm, {
-    materialName: '', specModel: '', category: '材料', unit: '项',
+    materialName: '', specModel: '', brand: '', category: '材料', unit: '项',
     basePriceWithTax: null, taxRate: 13, status: 'active'
   })
   editFormRef.value?.resetFields()
@@ -434,6 +450,18 @@ const handleDelete = async (row) => {
   await deleteMaterial(row.id)
   ElMessage.success('删除成功')
   fetchData()
+}
+
+// ===== 提交审批 =====
+const handleSubmitApproval = async (row) => {
+  await ElMessageBox.confirm(`确定提交材料"${row.material_name}"审批？`, '提交审批', { type: 'info' })
+  try {
+    await submitMaterialApproval(row.id)
+    ElMessage.success('已提交审批')
+    fetchData()
+  } catch (e) {
+    // error already handled by interceptor
+  }
 }
 
 onMounted(() => { fetchData() })
