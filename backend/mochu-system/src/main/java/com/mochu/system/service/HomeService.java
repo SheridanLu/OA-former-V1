@@ -12,12 +12,11 @@ import org.springframework.stereotype.Service;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 首页服务 — 对照 V3.2 §4.2, §5.9.2
+ * 首页服务
  */
 @Slf4j
 @Service
@@ -26,15 +25,15 @@ public class HomeService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final AnnouncementService announcementService;
+    private final TodoService todoService;
 
     /**
      * 获取首页数据
      */
     public HomeVO getHomeData() {
-        Integer userId = SecurityUtils.getCurrentUserId();
         HomeVO vo = new HomeVO();
 
-        // 待办数量（从 Redis 缓存读取，无缓存则返回 0）
+        // 待办数量 — 优先读缓存，无缓存则查DB并回写
         vo.setTodoCount(getTodoCount());
 
         // 最新公告（已发布，最多5条）
@@ -61,22 +60,20 @@ public class HomeService {
     }
 
     /**
-     * 待办数量 — V3.2 §5.9.2
+     * 待办数量 — 优先Redis缓存, 缓存miss时查DB并回写
      */
     public Integer getTodoCount() {
         Integer userId = SecurityUtils.getCurrentUserId();
         String todoKey = Constants.REDIS_TODO_COUNT_PREFIX + userId;
         Object todoCount = redisTemplate.opsForValue().get(todoKey);
-        return todoCount instanceof Number n ? n.intValue() : 0;
-    }
-
-    /**
-     * 待办列表 — V3.2 §5.9.2
-     * 业务模块完成后关联 biz_approval_instance 查询
-     */
-    public List<Map<String, Object>> getTodoList() {
-        // TODO: 关联 biz_approval_instance 查询当前用户待审批的记录
-        return new ArrayList<>();
+        if (todoCount instanceof Number n) {
+            return n.intValue();
+        }
+        // 缓存miss — 查DB并回写
+        long count = todoService.countPending();
+        redisTemplate.opsForValue().set(todoKey, (int) count,
+                Constants.TODO_COUNT_CACHE_SECONDS, TimeUnit.SECONDS);
+        return (int) count;
     }
 
     /**

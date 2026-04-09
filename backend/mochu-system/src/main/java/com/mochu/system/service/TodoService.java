@@ -9,26 +9,34 @@ import com.mochu.common.security.SecurityUtils;
 import com.mochu.system.entity.SysTodo;
 import com.mochu.system.mapper.SysTodoMapper;
 import com.mochu.system.vo.TodoVO;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 待办服务 — 对照 V3.2 §5.9.2
+ * 待办服务 — 含优先级/催办/分类统计/批量处理/缓存同步
  */
 @Service
 @RequiredArgsConstructor
 public class TodoService {
 
     private final SysTodoMapper todoMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    // ===================== 查询 =====================
 
     /**
-     * 当前用户待办列表（分页）
+     * 当前用户待办列表（分页 + 多条件筛选）
      */
-    public PageResult<TodoVO> listMyTodos(Integer status, Integer page, Integer size) {
+    public PageResult<TodoVO> listMyTodos(Integer status, String bizType, Integer priority,
+                                           Integer page, Integer size) {
         Integer userId = SecurityUtils.getCurrentUserId();
         if (page == null || page < 1) page = Constants.DEFAULT_PAGE;
         if (size == null || size < 1) size = Constants.DEFAULT_SIZE;
@@ -39,11 +47,26 @@ public class TodoService {
         if (status != null) {
             wrapper.eq(SysTodo::getStatus, status);
         }
-        wrapper.orderByDesc(SysTodo::getCreatedAt);
+        if (bizType != null && !bizType.isBlank()) {
+            wrapper.eq(SysTodo::getBizType, bizType);
+        }
+        if (priority != null) {
+            wrapper.eq(SysTodo::getPriority, priority);
+        }
+        // 排序: 特急>紧急>普通, 然后按创建时间倒序
+        wrapper.orderByDesc(SysTodo::getPriority)
+               .orderByDesc(SysTodo::getCreatedAt);
 
         todoMapper.selectPage(pageParam, wrapper);
         List<TodoVO> voList = pageParam.getRecords().stream().map(this::toVO).collect(Collectors.toList());
         return new PageResult<>(voList, pageParam.getTotal(), page, size);
+    }
+
+    /**
+     * 兼容旧接口
+     */
+    public PageResult<TodoVO> listMyTodos(Integer status, Integer page, Integer size) {
+        return listMyTodos(status, null, null, page, size);
     }
 
     /**
@@ -59,6 +82,56 @@ public class TodoService {
     }
 
     /**
+     * 按业务类型分组统计(当前用户待处理)
+     */
+    public List<TodoStatItem> statByBizType() {
+        Integer userId = SecurityUtils.getCurrentUserId();
+        List<SysTodo> pending = todoMapper.selectList(
+                new LambdaQueryWrapper<SysTodo>()
+                        .eq(SysTodo::getUserId, userId)
+                        .eq(SysTodo::getStatus, 0));
+
+        Map<String, Integer> countMap = new LinkedHashMap<>();
+        int urgentCount = 0;
+        int overdueCount = 0;
+        LocalDateTime now = LocalDateTime.now();
+
+        for (SysTodo t : pending) {
+            countMap.merge(t.getBizType() != null ? t.getBizType() : "other", 1, Integer::sum);
+            if (t.getPriority() != null && t.getPriority() >= 1) urgentCount++;
+            if (t.getDeadline() != null && t.getDeadline().isBefore(now)) overdueCount++;
+        }
+
+        List<TodoStatItem> items = new ArrayList<>();
+        countMap.forEach((type, count) -> {
+            TodoStatItem item = new TodoStatItem();
+            item.setBizType(type);
+            item.setCount(count);
+            items.add(item);
+        });
+
+        // 追加汇总项
+        TodoStatItem total = new TodoStatItem();
+        total.setBizType("_total");
+        total.setCount(pending.size());
+        items.add(0, total);
+
+        TodoStatItem urgent = new TodoStatItem();
+        urgent.setBizType("_urgent");
+        urgent.setCount(urgentCount);
+        items.add(1, urgent);
+
+        TodoStatItem overdue = new TodoStatItem();
+        overdue.setBizType("_overdue");
+        overdue.setCount(overdueCount);
+        items.add(2, overdue);
+
+        return items;
+    }
+
+    // ===================== 操作 =====================
+
+    /**
      * 标记已处理
      */
     public void markDone(Integer id) {
@@ -71,13 +144,66 @@ public class TodoService {
             throw new BusinessException(403, "只能处理自己的待办");
         }
         todo.setStatus(1);
+        todo.setHandledAt(LocalDateTime.now());
+        todo.setHandlerId(userId);
         todoMapper.updateById(todo);
+
+        // 同步缓存
+        syncTodoCountCache(userId);
     }
 
     /**
-     * 创建待办（内部方法，供业务模块调用）
+     * 批量标记已处理
      */
-    public void createTodo(Integer userId, String bizType, Integer bizId, String title, String content) {
+    public void batchMarkDone(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        Integer userId = SecurityUtils.getCurrentUserId();
+
+        List<SysTodo> todos = todoMapper.selectList(
+                new LambdaQueryWrapper<SysTodo>()
+                        .in(SysTodo::getId, ids)
+                        .eq(SysTodo::getUserId, userId)
+                        .eq(SysTodo::getStatus, 0));
+
+        LocalDateTime now = LocalDateTime.now();
+        for (SysTodo todo : todos) {
+            todo.setStatus(1);
+            todo.setHandledAt(now);
+            todo.setHandlerId(userId);
+            todoMapper.updateById(todo);
+        }
+
+        syncTodoCountCache(userId);
+    }
+
+    /**
+     * 催办
+     */
+    public void remind(Integer id) {
+        SysTodo todo = todoMapper.selectById(id);
+        if (todo == null) throw new BusinessException(404, "待办不存在");
+        if (todo.getStatus() == 1) throw new BusinessException("该待办已处理，无需催办");
+
+        todo.setRemindCount(todo.getRemindCount() != null ? todo.getRemindCount() + 1 : 1);
+        todo.setLastRemindAt(LocalDateTime.now());
+
+        // 催办自动升级优先级
+        if (todo.getPriority() == null || todo.getPriority() < 1) {
+            todo.setPriority(1); // 升级为紧急
+        } else if (todo.getPriority() == 1 && todo.getRemindCount() >= 3) {
+            todo.setPriority(2); // 多次催办升级为特急
+        }
+        todoMapper.updateById(todo);
+    }
+
+    // ===================== 创建待办(内部方法) =====================
+
+    /**
+     * 创建待办（增强版 — 含优先级/截止/跳转链接）
+     */
+    public void createTodo(Integer userId, String bizType, Integer bizId,
+                           String title, String content,
+                           Integer priority, LocalDateTime deadline, String linkUrl) {
         SysTodo todo = new SysTodo();
         todo.setUserId(userId);
         todo.setBizType(bizType);
@@ -85,7 +211,21 @@ public class TodoService {
         todo.setTitle(title);
         todo.setContent(content);
         todo.setStatus(0);
+        todo.setPriority(priority != null ? priority : 0);
+        todo.setDeadline(deadline);
+        todo.setLinkUrl(linkUrl);
+        todo.setRemindCount(0);
         todoMapper.insert(todo);
+
+        // 同步缓存
+        syncTodoCountCache(userId);
+    }
+
+    /**
+     * 创建待办（简化版 — 兼容旧调用）
+     */
+    public void createTodo(Integer userId, String bizType, Integer bizId, String title, String content) {
+        createTodo(userId, bizType, bizId, title, content, 0, null, null);
     }
 
     /**
@@ -97,10 +237,17 @@ public class TodoService {
                         .eq(SysTodo::getBizType, bizType)
                         .eq(SysTodo::getBizId, bizId)
                         .eq(SysTodo::getStatus, 0));
+
+        Set<Integer> affectedUsers = new HashSet<>();
+        LocalDateTime now = LocalDateTime.now();
         for (SysTodo t : todos) {
             t.setStatus(1);
+            t.setHandledAt(now);
             todoMapper.updateById(t);
+            affectedUsers.add(t.getUserId());
         }
+        // 同步所有受影响用户的缓存
+        affectedUsers.forEach(this::syncTodoCountCache);
     }
 
     /**
@@ -113,15 +260,48 @@ public class TodoService {
                         .eq(SysTodo::getBizType, bizType)
                         .eq(SysTodo::getBizId, bizId)
                         .eq(SysTodo::getStatus, 0));
+
+        LocalDateTime now = LocalDateTime.now();
         for (SysTodo t : todos) {
             t.setStatus(1);
+            t.setHandledAt(now);
             todoMapper.updateById(t);
         }
+        syncTodoCountCache(userId);
     }
+
+    // ===================== 缓存同步 =====================
+
+    /**
+     * 同步用户待办数量到 Redis 缓存
+     */
+    public void syncTodoCountCache(Integer userId) {
+        long count = todoMapper.selectCount(
+                new LambdaQueryWrapper<SysTodo>()
+                        .eq(SysTodo::getUserId, userId)
+                        .eq(SysTodo::getStatus, 0));
+        String todoKey = Constants.REDIS_TODO_COUNT_PREFIX + userId;
+        redisTemplate.opsForValue().set(todoKey, (int) count,
+                Constants.TODO_COUNT_CACHE_SECONDS, TimeUnit.SECONDS);
+    }
+
+    // ===================== 内部方法 =====================
 
     private TodoVO toVO(SysTodo entity) {
         TodoVO vo = new TodoVO();
         BeanUtils.copyProperties(entity, vo);
+        // 计算是否超期
+        if (entity.getStatus() == 0 && entity.getDeadline() != null) {
+            vo.setOverdue(entity.getDeadline().isBefore(LocalDateTime.now()));
+        } else {
+            vo.setOverdue(false);
+        }
         return vo;
+    }
+
+    @Data
+    public static class TodoStatItem {
+        private String bizType;
+        private Integer count;
     }
 }

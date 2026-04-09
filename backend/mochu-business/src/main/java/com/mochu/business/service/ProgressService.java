@@ -12,6 +12,7 @@ import com.mochu.business.vo.MilestoneVO;
 import com.mochu.common.constant.Constants;
 import com.mochu.common.exception.BusinessException;
 import com.mochu.common.result.PageResult;
+import com.mochu.system.service.TodoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ public class ProgressService {
     private final BizChangeDetailMapper changeDetailMapper;
     private final NoGeneratorService noGeneratorService;
     private final ProgressAuditService auditService;
+    private final TodoService todoService;
 
     // ===================== 甘特图任务 =====================
 
@@ -246,6 +248,13 @@ public class ProgressService {
 
         auditService.logStatusChange(task.getProjectId(), "task", id, task.getTaskName(),
                 "in_progress", "pending_review", null, userId);
+
+        // 创建待办 — 通知任务创建者审核
+        if (task.getCreatorId() != null && !task.getCreatorId().equals(userId)) {
+            todoService.createTodo(task.getCreatorId(), "task_review", id,
+                    "任务待审核: " + task.getTaskName(), "任务\"" + task.getTaskName() + "\"已提交审核，请及时处理",
+                    1, null, "/todos");
+        }
     }
 
     /**
@@ -275,6 +284,9 @@ public class ProgressService {
 
         auditService.logStatusChange(task.getProjectId(), "task", id, task.getTaskName(),
                 "pending_review", "completed", remark, userId);
+
+        // 自动关闭关联待办
+        todoService.markDoneByBiz("task_review", id);
     }
 
     /**
@@ -297,6 +309,15 @@ public class ProgressService {
 
         auditService.logStatusChange(task.getProjectId(), "task", id, task.getTaskName(),
                 "pending_review", "rejected", remark, userId);
+
+        // 关闭审核待办 + 通知负责人被驳回
+        todoService.markDoneByBiz("task_review", id);
+        if (task.getAssigneeId() != null) {
+            todoService.createTodo(task.getAssigneeId(), "task_rejected", id,
+                    "任务被驳回: " + task.getTaskName(),
+                    "任务\"" + task.getTaskName() + "\"审核未通过" + (remark != null ? "，原因: " + remark : ""),
+                    1, null, "/todos");
+        }
     }
 
     /**
@@ -649,6 +670,13 @@ public class ProgressService {
 
         auditService.logStatusChange(ms.getProjectId(), "milestone", id, ms.getTaskName(),
                 "draft", "pending", null, userId);
+
+        // 创建待办 — 通知里程碑创建者审批(如不是自己提交)
+        if (ms.getCreatorId() != null && !ms.getCreatorId().equals(userId)) {
+            todoService.createTodo(ms.getCreatorId(), "milestone_approval", id,
+                    "里程碑待审批: " + ms.getTaskName(), "里程碑\"" + ms.getTaskName() + "\"已提交审批，请及时处理",
+                    1, null, "/todos");
+        }
     }
 
     /**
@@ -668,6 +696,9 @@ public class ProgressService {
 
         auditService.logStatusChange(ms.getProjectId(), "milestone", id, ms.getTaskName(),
                 "pending", "approved", remark, userId);
+
+        // 关闭审批待办
+        todoService.markDoneByBiz("milestone_approval", id);
     }
 
     /**
@@ -686,6 +717,15 @@ public class ProgressService {
 
         auditService.logStatusChange(ms.getProjectId(), "milestone", id, ms.getTaskName(),
                 "pending", "draft", remark, userId);
+
+        // 关闭审批待办 + 通知提交人被驳回
+        todoService.markDoneByBiz("milestone_approval", id);
+        if (ms.getCreatorId() != null) {
+            todoService.createTodo(ms.getCreatorId(), "milestone_rejected", id,
+                    "里程碑被驳回: " + ms.getTaskName(),
+                    "里程碑\"" + ms.getTaskName() + "\"审批未通过" + (remark != null ? "，原因: " + remark : ""),
+                    1, null, "/todos");
+        }
     }
 
     /**
@@ -856,8 +896,21 @@ public class ProgressService {
         if (order == null) {
             throw new BusinessException("变更单不存在");
         }
+        String oldStatus = order.getStatus();
         order.setStatus(status);
         changeOrderMapper.updateById(order);
+
+        // 变更单提交审批 → 创建待办; 审批通过/驳回 → 关闭待办
+        if ("pending".equals(status) && !"pending".equals(oldStatus)) {
+            if (order.getCreatorId() != null) {
+                todoService.createTodo(order.getCreatorId(), "change_approval", id,
+                        "变更单待审批: " + order.getTitle(),
+                        "变更单\"" + order.getTitle() + "\"已提交审批",
+                        1, null, "/todos");
+            }
+        } else if ("approved".equals(status) || "rejected".equals(status)) {
+            todoService.markDoneByBiz("change_approval", id);
+        }
     }
 
     public void deleteChangeOrder(Integer id) {

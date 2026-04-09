@@ -9,11 +9,8 @@ import com.mochu.system.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-
 /**
- * 首页 + 个人信息接口 — 对照 V3.2 §4.2, §5.9.2
+ * 首页 + 个人信息接口
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -32,19 +29,11 @@ public class HomeController {
     }
 
     /**
-     * 待办数量 — GET /api/v1/home/todo-count — V3.2 §5.9.2
+     * 待办数量 — GET /api/v1/home/todo-count
      */
     @GetMapping("/home/todo-count")
     public R<Integer> todoCount() {
         return R.ok(homeService.getTodoCount());
-    }
-
-    /**
-     * 待办列表 — GET /api/v1/home/todo-list — V3.2 §5.9.2
-     */
-    @GetMapping("/home/todo-list")
-    public R<List<Map<String, Object>>> todoList() {
-        return R.ok(homeService.getTodoList());
     }
 
     /**
