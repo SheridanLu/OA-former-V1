@@ -28,4 +28,7 @@ public class MilestoneDTO {
 
     /** 前置依赖的里程碑ID列表 */
     private List<Integer> depMilestoneIds;
+
+    /** 关联的任务ID列表(用于完成度判定) */
+    private List<Integer> linkedTaskIds;
 }

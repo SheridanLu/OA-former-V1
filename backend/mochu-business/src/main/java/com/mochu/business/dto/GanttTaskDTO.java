@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class GanttTaskDTO {
@@ -16,6 +17,9 @@ public class GanttTaskDTO {
     private Integer projectId;
 
     private Integer parentId;
+
+    /** 负责人ID */
+    private Integer assigneeId;
 
     @NotBlank(message = "任务名称不能为空")
     private String taskName;
@@ -33,9 +37,20 @@ public class GanttTaskDTO {
 
     private BigDecimal progressPct;
 
-    private String dependencyType;
+    /** 进度权重 */
+    private BigDecimal weight;
 
-    private Integer dependencyTaskId;
+    /** WBS编码 */
+    private String wbsCode;
 
     private Integer sortOrder;
+
+    /** 前置依赖任务列表 [{depTaskId, depType}] */
+    private List<TaskDepItem> dependencies;
+
+    @Data
+    public static class TaskDepItem {
+        private Integer depTaskId;
+        private String depType;
+    }
 }
